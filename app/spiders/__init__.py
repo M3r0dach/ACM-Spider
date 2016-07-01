@@ -29,3 +29,18 @@ class Spider:
     @staticmethod
     def get_lxml_bs4(markup):
         return BeautifulSoup(markup, 'lxml')
+
+    @staticmethod
+    @gen.coroutine
+    def load_page(self, url, headers):
+        page = ''
+        try:
+            response = yield self.fetch(url, headers=headers)
+            page = response.body
+        except httpclient.HTTPError as e:
+            pass
+        finally:
+            return page
+
+
+

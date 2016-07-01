@@ -8,7 +8,6 @@ class HduSpider(Spider):
 
     def __init__(self):
         super(HduSpider, self).__init__()
-        pass
 
     @gen.coroutine
     def login(self):
@@ -17,7 +16,6 @@ class HduSpider(Spider):
             'userpass': '63005610',
             'login': 'Sign In'
         })
-
         headers = {
             'Cookie': 'PHPSESSID=vaphch5ppl9mvuf75jp1l8j373'
         }
