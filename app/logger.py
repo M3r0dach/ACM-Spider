@@ -25,3 +25,4 @@ def setup_logger(level, pathname):
     stream_handler.setFormatter(formatter)
 
     logger.addHandler(file_handler)
+    # logger.addHandler(stream_handler)

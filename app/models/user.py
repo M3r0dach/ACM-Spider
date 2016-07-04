@@ -5,6 +5,8 @@ session = Session()
 
 
 class User(BaseModel):
+    __tablename__ = 'user'
+
     id = Column(Integer, primary_key=True)
     username = Column(String(25), unique=True, index=True, nullable=False)
     name = Column(String(25))

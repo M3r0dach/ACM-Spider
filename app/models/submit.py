@@ -6,6 +6,8 @@ session = Session()
 
 
 class Submit(BaseModel):
+    __tablename__ = 'submit'
+
     id = Column(Integer, primary_key=True)
     pro_id = Column(String(12))
     run_id = Column(String(20))

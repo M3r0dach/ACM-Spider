@@ -8,5 +8,12 @@ log_dir = base_dir + '/log/spider.log'
 log_level = logging.DEBUG
 
 # database
-DB_URI = 'mysql://{username}:{pwd}@{host}/{db_name}'.format(**db_config)
-DB_SHOW_SQL = True
+DB_URI = 'mysql+pymysql://{username}:{pwd}@{host}/{db_name}'.format(**db_config)
+DB_SHOW_SQL = False
+
+# concurrency
+MAX_QUEUE_SIZE = 5
+WORKER_SIZE = 2
+
+# hours between account to update again
+FETCH_TIMEDELTA = 6

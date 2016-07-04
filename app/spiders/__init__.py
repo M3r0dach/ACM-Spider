@@ -1,5 +1,6 @@
 from tornado import gen, httpclient
 from bs4 import BeautifulSoup
+from logger import logger
 
 USER_AGENT = 'Mozilla/5.0 (Windows NT 6.3; WOW64)AppleWebKit/537.36 (KHTML, like Gecko) ' \
              'Chrome/51.0.2704.103 Safari/537.36'
@@ -32,15 +33,14 @@ class Spider:
 
     @staticmethod
     @gen.coroutine
-    def load_page(self, url, headers):
-        page = ''
+    def load_page(url, headers=None):
+        response = None
         try:
-            response = yield self.fetch(url, headers=headers)
-            page = response.body
+            response = yield Spider.fetch(url, headers=headers)
         except httpclient.HTTPError as e:
-            pass
+            logger.error('加载 {} 失败'.format(url), e)
         finally:
-            return page
+            return response
 
 
 
