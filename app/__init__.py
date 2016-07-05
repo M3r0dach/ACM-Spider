@@ -1,11 +1,26 @@
+import sys
 import settings
 from tornado import gen
 from tornado.queues import Queue
 from app.models import account
 from app.logger import logger
+from app.spiders import HduSpider, BnuSpider
 
 
 mq = Queue(maxsize=settings.MAX_QUEUE_SIZE)
+spider_cache = {
+    oj: Queue(settings.SPIDER_CACHE_SIZE) for oj in settings.SUPPORT_OJ
+}
+
+
+def spider_init():
+    for oj, oj_queue in spider_cache.items():
+        spider_name = oj.capitalize() + 'Spider'
+        spider_class = getattr(sys.modules['app.spiders.' + spider_name],
+                               spider_name)
+        while oj_queue.qsize() < oj_queue.maxsize:
+            oj_queue.put(spider_class())
+            logger.info('{} queue size {}'.format(oj, oj_queue.qsize()))
 
 
 @gen.coroutine
@@ -34,6 +49,7 @@ def spider_runner():
 
 @gen.coroutine
 def main():
-    account.init_all()
-    yield [spider_runner() for _ in range(settings.WORKER_SIZE)]
+    # account.init_all()
+    # yield [spider_runner() for _ in range(settings.WORKER_SIZE)]
+    yield HduSpider.HduSpider().run()
 

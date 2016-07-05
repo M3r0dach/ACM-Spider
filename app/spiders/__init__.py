@@ -1,6 +1,7 @@
 from tornado import gen, httpclient
 from bs4 import BeautifulSoup
 from logger import logger
+from app.exceptions import LoadPageException
 
 USER_AGENT = 'Mozilla/5.0 (Windows NT 6.3; WOW64)AppleWebKit/537.36 (KHTML, like Gecko) ' \
              'Chrome/51.0.2704.103 Safari/537.36'
@@ -33,12 +34,17 @@ class Spider:
 
     @staticmethod
     @gen.coroutine
-    def load_page(url, headers=None):
+    def load_page(url, headers=None, cookie=None):
         response = None
         try:
+            if not headers:
+                headers = {}
+            if cookie:
+                headers['Cookie'] = cookie
             response = yield Spider.fetch(url, headers=headers)
-        except httpclient.HTTPError as e:
-            logger.error('加载 {} 失败'.format(url), e)
+        except httpclient.HTTPError as ex:
+            logger.error('加载 {} 失败'.format(url), ex)
+            raise LoadPageException('加载 {} 失败'.format(url), ex)
         finally:
             return response
 

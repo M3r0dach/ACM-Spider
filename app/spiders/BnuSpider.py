@@ -9,3 +9,6 @@ class BnuSpider(Spider):
 
     def login(self):
         pass
+
+    def run(self):
+        pass
