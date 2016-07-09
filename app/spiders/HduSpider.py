@@ -3,7 +3,6 @@ from urllib import parse
 from logger import logger
 from app.spiders import Spider, HttpMethod
 from app.exceptions import LoginException
-from app.decorators import try_run
 
 
 class HduSpider(Spider):
@@ -22,6 +21,8 @@ class HduSpider(Spider):
 
     @gen.coroutine
     def fetch_cookie(self):
+        if self.cookie:
+            return True
         response = yield self.load_page(self.index_url)
         if not response:
             return False
@@ -52,18 +53,15 @@ class HduSpider(Spider):
 
     @gen.coroutine
     def login(self):
+        if self.has_login:
+            return True
         post_body = parse.urlencode({
             'username': 'Raychat',
             'userpass': '63005610',
             'login': 'Sign In'
         })
-        headers = {
-            'Cookie': self.cookie
-        }
-        response = yield self.fetch(self.login_url,
-                                    headers=headers,
-                                    method=HttpMethod.POST,
-                                    body=post_body)
+        response = yield self.fetch(self.login_url, method=HttpMethod.POST,
+                                    headers={'cookie': self.cookie}, body=post_body)
         code = response.code
         if (code != 200 and code != 302) or response.body.find(b'Sign Out') == -1:
             return False
@@ -79,7 +77,7 @@ class HduSpider(Spider):
     def get_solved(self):
         url = self.user_url_prefix.format('Raychat')
         try:
-            response = yield self.load_page(url, cookie=self.cookie)
+            response = yield self.load_page(url, {'cookie': self.cookie})
             if not response:
                 return False
             soup = self.get_lxml_bs4(response.body)
@@ -96,14 +94,14 @@ class HduSpider(Spider):
                 'solved_list': solved_list
             }
         except Exception as ex:
-            logger.error('get Solved/Submitted error: {}'.format(ex))
+            logger.error('{} get Solved/Submitted error: {}'.format(self.account, ex))
             raise ex
 
     @gen.coroutine
     def get_code(self, run_id):
         url = self.source_code_prefix.format(run_id)
         try:
-            response = yield self.load_page(url, cookie=self.cookie)
+            response = yield self.load_page(url, {'cookie': self.cookie})
             if not response:
                 return False
             soup = self.get_lxml_bs4(response.body)
@@ -117,7 +115,7 @@ class HduSpider(Spider):
         url = self.status_prefix.format('Raychat', first)
         status_list = []
         try:
-            response = yield self.load_page(url, cookie=self.cookie)
+            response = yield self.load_page(url, {'cookie': self.cookie})
             if not response:
                 return False
             soup = self.get_lxml_bs4(response.body)
@@ -150,10 +148,8 @@ class HduSpider(Spider):
 
     @gen.coroutine
     def run(self):
-        if not self.cookie:
-            yield self.fetch_cookie()
-        if not self.has_login:
-            yield self.login()
+        yield self.fetch_cookie()
+        yield self.login()
         if not self.has_login:
             raise LoginException('{} login error'.format(self.account))
         yield self.get_solved()

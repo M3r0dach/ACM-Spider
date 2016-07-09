@@ -51,5 +51,6 @@ def spider_runner():
 def main():
     # account.init_all()
     # yield [spider_runner() for _ in range(settings.WORKER_SIZE)]
-    yield HduSpider.HduSpider().run()
+    # yield HduSpider.HduSpider().run()
+    yield BnuSpider.BnuSpider().run()
 

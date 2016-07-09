@@ -34,17 +34,13 @@ class Spider:
 
     @staticmethod
     @gen.coroutine
-    def load_page(url, headers=None, cookie=None):
+    def load_page(url, headers=None):
         response = None
         try:
-            if not headers:
-                headers = {}
-            if cookie:
-                headers['Cookie'] = cookie
             response = yield Spider.fetch(url, headers=headers)
         except httpclient.HTTPError as ex:
-            logger.error('加载 {} 失败'.format(url), ex)
-            raise LoadPageException('加载 {} 失败'.format(url), ex)
+            logger.error('加载 {} 失败: {}'.format(url, ex))
+            raise LoadPageException('加载 {} 失败: {}'.format(url, ex))
         finally:
             return response
 
