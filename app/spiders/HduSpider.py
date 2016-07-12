@@ -94,7 +94,7 @@ class HduSpider(Spider):
                 'solved_list': solved_list
             }
         except Exception as ex:
-            logger.error('{} get Solved/Submitted error: {}'.format(self.account, ex))
+            logger.error('[HDU] {} get Solved/Submitted error: {}'.format(self.account, ex))
             raise ex
 
     @gen.coroutine
