@@ -4,7 +4,7 @@ from tornado import gen
 from tornado.queues import Queue
 from app.models import account
 from app.logger import logger
-from app.spiders import HduSpider, BnuSpider
+from app.spiders import HduSpider, BnuSpider, VjudgeSpider
 
 
 mq = Queue(maxsize=settings.MAX_QUEUE_SIZE)
@@ -52,5 +52,6 @@ def main():
     # account.init_all()
     # yield [spider_runner() for _ in range(settings.WORKER_SIZE)]
     # yield HduSpider.HduSpider().run()
-    yield BnuSpider.BnuSpider().run()
+    # yield BnuSpider.BnuSpider().run()
+    yield VjudgeSpider.VjudgeSpider().run()
 

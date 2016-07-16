@@ -8,6 +8,7 @@ from app.exceptions import LoginException
 
 
 class BnuSpider(Spider):
+    TAG = '[BNU]'
     domain = 'https://acm.bnu.edu.cn/v3'
     login_url = domain + '/ajax/login.php'
     user_url_prefix = domain + '/userinfo.php?name={0}'
@@ -37,9 +38,11 @@ class BnuSpider(Spider):
         if code != 200 and code != 302 or res['code'] != 0:
             return False
         set_cookie = response.headers.get_list('Set-Cookie')
-        self.cookie = ';'.join(list(filter(lambda cookie: cookie.find('deleted') == -1, set_cookie)))
+        self.cookie = ';'.join(list(
+            filter(lambda cookie: cookie.find('deleted') == -1, set_cookie)
+        ))
         self.has_login = True
-        logger.info('BNU login success')
+        logger.info('{} login success {}'.format(self.TAG, self.account))
         return True
 
     @staticmethod
@@ -65,7 +68,7 @@ class BnuSpider(Spider):
                 'solved_list': self._get_solved_list(soup)
             }
         except Exception as ex:
-            logger.error('{} get Solved/Submitted error: {}'.format(self.account, ex))
+            logger.error('{} get Solved/Submitted error {}: {}'.format(self.TAG, self.account, ex))
             raise ex
 
     @staticmethod
@@ -102,7 +105,7 @@ class BnuSpider(Spider):
             code = res['source']
             return unescape(code)
         except Exception as ex:
-            logger.error('[BNU] fetch {}\'s {} code error {}'.format('Rayn', run_id, ex))
+            logger.error('{} fetch {}\'s {} code error {}'.format(self.TAG, 'Rayn', run_id, ex))
 
     @gen.coroutine
     def get_submits(self):
@@ -127,6 +130,6 @@ class BnuSpider(Spider):
     def run(self):
         yield self.login()
         if not self.has_login:
-            raise LoginException('{} login error'.format(self.account))
+            raise LoginException('{} login error {}'.format(self.TAG, self.account))
         yield self.get_solved()
         yield self.get_submits()

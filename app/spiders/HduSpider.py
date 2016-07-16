@@ -6,6 +6,7 @@ from app.exceptions import LoginException
 
 
 class HduSpider(Spider):
+    TAG = '[HDU]'
     domain = 'http://acm.hdu.edu.cn'
     index_url = domain
     login_url = domain + '/userloginex.php?action=login'
@@ -27,7 +28,7 @@ class HduSpider(Spider):
         if not response:
             return False
         self.cookie = response.headers['Set-Cookie']
-        logger.info('fetch cookie success')
+        logger.info('{} fetch cookie success'.format(self.TAG))
         return True
 
     @staticmethod
@@ -65,7 +66,7 @@ class HduSpider(Spider):
         code = response.code
         if (code != 200 and code != 302) or response.body.find(b'Sign Out') == -1:
             return False
-        logger.info('HDU login success')
+        logger.info('{} login success'.format(self.TAG))
         self.has_login = True
         return True
 
@@ -94,7 +95,7 @@ class HduSpider(Spider):
                 'solved_list': solved_list
             }
         except Exception as ex:
-            logger.error('[HDU] {} get Solved/Submitted error: {}'.format(self.account, ex))
+            logger.error('{} {} get Solved/Submitted error: {}'.format(self.TAG, self.account, ex))
             raise ex
 
     @gen.coroutine
@@ -108,7 +109,7 @@ class HduSpider(Spider):
             code = soup.find('textarea', id='usercode').text
             return code
         except Exception as ex:
-            logger.error('fetch {}\'s {} code error'.format('Raychat', run_id), ex)
+            logger.error('{} fetch {}\'s {} code error'.format(self.TAG, 'Raychat', run_id), ex)
 
     @gen.coroutine
     def fetch_status(self, first):
@@ -135,7 +136,7 @@ class HduSpider(Spider):
                 status_list.append(status)
             return status_list
         except Exception as ex:
-            logger.error('fetch status nickname: {} first: {}'.format('Raychat', first), ex)
+            logger.error('{} fetch status nickname: {} first: {}'.format(self.TAG, 'Raychat', first), ex)
 
     @gen.coroutine
     def get_submits(self):
@@ -151,6 +152,6 @@ class HduSpider(Spider):
         yield self.fetch_cookie()
         yield self.login()
         if not self.has_login:
-            raise LoginException('{} login error'.format(self.account))
+            raise LoginException('{} login error {}'.format(self.TAG, self.account))
         yield self.get_solved()
         yield self.get_submits()
