@@ -4,7 +4,8 @@ from tornado import gen
 from tornado.queues import Queue
 from app.models import account
 from app.logger import logger
-from app.spiders import HduSpider, BnuSpider, VjudgeSpider
+from app.spiders import HduSpider, BnuSpider, VjudgeSpider, \
+    CodeforcesSpider
 
 
 mq = Queue(maxsize=settings.MAX_QUEUE_SIZE)
@@ -15,7 +16,7 @@ spider_cache = {
 
 def spider_init():
     for oj, oj_queue in spider_cache.items():
-        spider_name = oj.capitalize() + 'Spider'
+        spider_name = settings.SUPPORT_OJ[oj]
         spider_class = getattr(sys.modules['app.spiders.' + spider_name],
                                spider_name)
         while oj_queue.qsize() < oj_queue.maxsize:
@@ -53,5 +54,5 @@ def main():
     # yield [spider_runner() for _ in range(settings.WORKER_SIZE)]
     # yield HduSpider.HduSpider().run()
     # yield BnuSpider.BnuSpider().run()
-    yield VjudgeSpider.VjudgeSpider().run()
-
+    # yield VjudgeSpider.VjudgeSpider().run()
+    yield CodeforcesSpider.CodeforcesSpider().run()

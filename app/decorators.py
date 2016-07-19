@@ -13,9 +13,11 @@ def try_run(times=3, duration=5):
             while left_times > 0 and call_state is False:
                 try:
                     ret = yield function(*args, **kwargs)
-                    if isinstance(ret, bool):
-                        call_state = ret
-                    if call_state:
+                    if isinstance(ret, bool) and not ret:
+                        call_state = False
+                    elif not ret:
+                        call_state = False
+                    if not call_state:
                         yield gen.sleep(duration)
                 except Exception as e:
                     logger.error(e)

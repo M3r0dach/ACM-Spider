@@ -3,7 +3,12 @@ import logging
 from secret import db_config
 
 # support oj
-SUPPORT_OJ = ['hdu', 'bnu']
+SUPPORT_OJ = {
+    'hdu': 'Hdu',
+    'bnu': 'Bnu',
+    'vj': 'Vjduge',
+    'cf': 'Codeforces'
+}
 
 # directory
 base_dir = os.path.split(os.path.realpath(__file__))[0]
