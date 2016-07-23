@@ -8,7 +8,7 @@ from app.spiders import Spider
 class CodeforcesSpider(Spider):
     TAG = '[Codeforces]'
     domain = 'http://codeforces.com'
-    user_info_prefix = domain + '/api/user.info?handles={}'
+    user_info_prefix = domain + '/api/user.info?handles={0}'
     status_prefix = domain + '/api/user.status?handle={0}&from={1}&count={2}'
     code_prefix = domain + '/contest/{0}/submission/{1}'
 
@@ -40,7 +40,7 @@ class CodeforcesSpider(Spider):
         try:
             response = yield self.load_page(url)
             if not response:
-                return False
+                return None
             soup = self.get_lxml_bs4(response.body)
             code = soup.find('pre', class_='program-source').text
             return code

@@ -7,7 +7,11 @@ SUPPORT_OJ = {
     'hdu': 'Hdu',
     'bnu': 'Bnu',
     'vj': 'Vjduge',
-    'cf': 'Codeforces'
+    'cf': 'Codeforces',
+    'zoj': 'Zoj',
+    'poj': 'Poj',
+    'uva': 'Uva',
+    'bc': 'Bestcoder'
 }
 
 # directory

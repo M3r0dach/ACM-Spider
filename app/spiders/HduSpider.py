@@ -1,6 +1,6 @@
 from tornado import gen
 from urllib import parse
-from logger import logger
+from app.logger import logger
 from app.spiders import Spider, HttpMethod
 from app.exceptions import LoginException
 
@@ -64,7 +64,8 @@ class HduSpider(Spider):
         response = yield self.fetch(self.login_url, method=HttpMethod.POST,
                                     headers={'cookie': self.cookie}, body=post_body)
         code = response.code
-        if (code != 200 and code != 302) or response.body.find(b'Sign Out') == -1:
+        page = response.body.decode()
+        if (code != 200 and code != 302) or page.find('Sign Out') == -1:
             return False
         logger.info('{} login success'.format(self.TAG))
         self.has_login = True
