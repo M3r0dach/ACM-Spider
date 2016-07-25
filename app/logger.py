@@ -9,7 +9,7 @@ def setup_logger(level, pathname):
     logging.basicConfig()
 
     # create a file handler
-    file_handler = logging.FileHandler(pathname)
+    file_handler = logging.FileHandler(pathname, encoding='utf-8')
     file_handler.setLevel(level)
 
     # create a stream handler

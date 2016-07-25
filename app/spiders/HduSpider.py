@@ -64,7 +64,7 @@ class HduSpider(Spider):
         response = yield self.fetch(self.login_url, method=HttpMethod.POST,
                                     headers={'cookie': self.cookie}, body=post_body)
         code = response.code
-        page = response.body.decode()
+        page = response.body.decode('gb2312')
         if (code != 200 and code != 302) or page.find('Sign Out') == -1:
             return False
         logger.info('{} login success'.format(self.TAG))
@@ -146,6 +146,7 @@ class HduSpider(Spider):
             status_list = yield self.fetch_status(first)
             if not status_list:
                 return
+            print(status_list)
             # TODO
 
     @gen.coroutine
@@ -154,5 +155,7 @@ class HduSpider(Spider):
         yield self.login()
         if not self.has_login:
             raise LoginException('{} login error {}'.format(self.TAG, self.account))
-        yield self.get_solved()
-        yield self.get_submits()
+        # yield self.get_solved()
+        # yield self.get_submits()
+        code = yield self.get_code('11086780')
+        print(code)

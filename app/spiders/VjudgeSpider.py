@@ -28,8 +28,13 @@ class VjudgeSpider(Spider):
             'username': 'HotWhite',
             'password': 'cuitasdf'
         })
+        headers = {
+            'Host': 'acm.hust.edu.cn',
+            'Origin': 'http://acm.hust.edu.cn',
+            'Referer': 'http://acm.hust.edu.cn/vjudge/index'
+        }
         response = yield self.fetch(self.login_url, method=HttpMethod.POST,
-                                    body=post_body)
+                                    body=post_body, headers=headers)
         code = response.code
         res = response.body.decode()
         if code != 200 and code != 302 or res != 'success':
@@ -59,7 +64,6 @@ class VjudgeSpider(Spider):
             'res': 0,
             'language': '',
             'orderBy': 'run_id'
-
         }
         for i in range(12):
             idx = str(i)

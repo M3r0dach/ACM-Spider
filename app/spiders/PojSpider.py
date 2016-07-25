@@ -9,7 +9,8 @@ class PojSpider(Spider):
     TAG = '[POJ]'
     domain = 'http://poj.org'
     login_url = domain + '/login'
-    user_url_prefix = domain + '//userstatus?user_id={0}'
+    user_url_prefix = domain + '/userstatus?user_id={0}'
+    status_prefix = domain + '/status?user_id={0}&top={1}'
 
     def __init__(self):
         super(PojSpider, self).__init__()
@@ -82,6 +83,45 @@ class PojSpider(Spider):
             raise ex
 
     @gen.coroutine
+    def get_code(self, run_id):
+        pass
+
+    @gen.coroutine
+    def fetch_status(self, first=''):
+        url = self.status_prefix.format('Raychat', first)
+        status_list = []
+        try:
+            response = yield self.load_page(url)
+            if not response:
+                return False
+            soup = self.get_lxml_bs4(response.body)
+            status_table = soup.find('table', class_='a')
+            for row in status_table.children:
+                if row.name != 'tr':
+                    continue
+                if row.get('class') and 'in' in row.get('class'):
+                    continue
+                td_text = [td.text for td in row.children if td.name == 'td']
+                code = yield self.get_code(td_text[0])
+                run_time = td_text[5][:-2] or '-1'
+                memory = td_text[4][:-1] or '-1'
+                status = {
+                    'run_id': td_text[0], 'submit_time': td_text[8], 'result': td_text[3],
+                    'pro_id': td_text[2], 'run_time': run_time, 'memory': memory,
+                    'lang': td_text[6], 'code': code
+                }
+                status_list.append(status)
+            return status_list
+        except Exception as ex:
+            logger.error('{} fetch status => nickname: {} first: {}'.format(self.TAG, 'Raychat', first), ex)
+
+    @gen.coroutine
+    def get_submits(self):
+        yield self.fetch_status()
+        # TODO
+
+    @gen.coroutine
     def run(self):
         yield self.login()
         yield self.get_solved()
+        yield self.get_submits()
