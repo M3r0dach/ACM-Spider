@@ -15,6 +15,8 @@ class HttpMethod:
 
 
 class Spider:
+    TAG = '[BASE]'
+
     def __init__(self):
         pass
 
@@ -44,5 +46,11 @@ class Spider:
         finally:
             return response
 
+    def __repr__(self):
+        return '<{}Spider>'.format(self.TAG)
+
+    @gen.coroutine
+    def run(self):
+        raise Exception('Not Implemented!')
 
 
