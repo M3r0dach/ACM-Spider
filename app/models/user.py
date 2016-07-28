@@ -1,7 +1,7 @@
-from . import BaseModel, Session
 from sqlalchemy import Column, Integer, String, Boolean, DateTime
+from app.models import BaseModel, SessionFactory
 
-session = Session()
+session = SessionFactory()
 
 
 class User(BaseModel):

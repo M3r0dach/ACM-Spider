@@ -6,7 +6,7 @@ from secret import db_config
 SUPPORT_OJ = {
     'hdu': 'Hdu',
     'bnu': 'Bnu',
-    'vj': 'Vjduge',
+    'vj': 'Vjudge',
     'cf': 'Codeforces',
     'zoj': 'Zoj',
     'poj': 'Poj',
@@ -28,5 +28,9 @@ SPIDER_CACHE_SIZE = 5
 MAX_QUEUE_SIZE = 5
 WORKER_SIZE = 2
 
+# data
+DATA_POOL_SIZE = 64
+BATCH_SAVE_SIZE = 10
+
 # hours between account to update again
-FETCH_TIMEDELTA = 6
+FETCH_TIMEDELTA = 0

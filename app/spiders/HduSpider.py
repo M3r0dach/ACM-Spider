@@ -3,6 +3,7 @@ from urllib import parse
 from app.logger import logger
 from app.spiders import Spider, HttpMethod
 from app.exceptions import LoginException
+from app.decorators import try_run
 
 
 class HduSpider(Spider):
@@ -28,8 +29,12 @@ class HduSpider(Spider):
         if not response:
             return False
         self.cookie = response.headers['Set-Cookie']
-        logger.info('{} fetch cookie success'.format(self.TAG))
-        return True
+        if self.cookie:
+            logger.info('{} fetch cookie success'.format(self.TAG))
+            return True
+        else:
+            self.cookie = ''
+            return False
 
     @staticmethod
     def _get_solved_list(soup):
@@ -99,6 +104,7 @@ class HduSpider(Spider):
             logger.error('{} {} get Solved/Submitted error: {}'.format(self.TAG, self.account, ex))
             raise ex
 
+    @try_run(3)
     @gen.coroutine
     def get_code(self, run_id):
         url = self.source_code_prefix.format(run_id)
@@ -110,7 +116,8 @@ class HduSpider(Spider):
             code = soup.find('textarea', id='usercode').text
             return code
         except Exception as ex:
-            logger.error('{} fetch {}\'s {} code error'.format(self.TAG, 'Raychat', run_id), ex)
+            logger.error(ex)
+            logger.error('{} fetch {}\'s {} code error'.format(self.TAG, 'Raychat', run_id))
 
     @gen.coroutine
     def fetch_status(self, first):
@@ -146,7 +153,10 @@ class HduSpider(Spider):
             status_list = yield self.fetch_status(first)
             if not status_list:
                 return
-            print(status_list)
+            first = int(status_list[-1]['run_id']) - 1
+            print(len(status_list))
+            if first <= int('11028525'):
+                return
             # TODO
 
     @gen.coroutine
@@ -155,7 +165,5 @@ class HduSpider(Spider):
         yield self.login()
         if not self.has_login:
             raise LoginException('{} login error {}'.format(self.TAG, self.account))
-        # yield self.get_solved()
-        # yield self.get_submits()
-        code = yield self.get_code('11086780')
-        print(code)
+        yield self.get_solved()
+        yield self.get_submits()

@@ -1,9 +1,9 @@
-import redis
+import redis as py_redis
 from secret import redis_config, RedisKey
 from settings import SUPPORT_OJ
 from app.logger import logger
 
-redis = redis.StrictRedis(**redis_config)
+redis = py_redis.StrictRedis(**redis_config)
 
 # keys define
 switch_key = RedisKey.prefix + RedisKey.switch

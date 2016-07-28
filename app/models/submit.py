@@ -1,8 +1,8 @@
-from . import BaseModel, Session
 from sqlalchemy import Column, Integer, String, DateTime, Text, ForeignKey
 from sqlalchemy.orm import relationship, backref
+from app.models import BaseModel, SessionFactory
 
-session = Session()
+session = SessionFactory()
 
 
 class Submit(BaseModel):

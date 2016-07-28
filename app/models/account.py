@@ -1,11 +1,12 @@
 import settings
-from . import BaseModel, Session
-from .user import User
 from sqlalchemy import Column, Integer, String, DateTime, ForeignKey
 from sqlalchemy import or_, orm
 from datetime import datetime, timedelta
+from app.models import BaseModel, SessionFactory
+from app.models.user import User
+from app.logger import logger
 
-session = Session()
+session = SessionFactory()
 
 
 class AccountStatus:
@@ -39,17 +40,8 @@ class Account(BaseModel):
     def __repr__(self):
         return '<Account %s %s>' % (self.oj_name, self.nickname)
 
-    def set_updating(self):
-        self.update_status = AccountStatus.UPDATING
-
-    def set_normal(self):
-        self.update_status = AccountStatus.NORMAL
-
-    def set_error(self):
-        self.update_status = AccountStatus.UPDATE_ERROR
-
-    def set_account_error(self):
-        self.update_status = AccountStatus.ACCOUNT_ERROR
+    def set_status(self, new_status):
+        self.update_status = new_status
 
     def save(self):
         session.add(self)
@@ -61,6 +53,7 @@ class Account(BaseModel):
 
 
 def init_all():
+    logger.info("[AccountInit] all account which is UPDATING has changed into NOT_INIT")
     session.query(Account).filter(Account.update_status == AccountStatus.UPDATING)\
         .update({Account.update_status: AccountStatus.NOT_INIT})
     session.commit()
@@ -80,7 +73,7 @@ def get_available_account():
         session.commit()
         return
 
-    cur_account.set_updating()
+    cur_account.set_status(AccountStatus.UPDATING)
     cur_account.save()
     return cur_account
 

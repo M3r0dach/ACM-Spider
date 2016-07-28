@@ -10,9 +10,10 @@ def try_run(times=3, duration=5):
         def wrapper(*args, **kwargs):
             left_times = times
             call_state, ret = False, None
-            logger.info('<try run {0} times> {1}({2})'.format(times, function.__name__, args))
             while left_times > 0 and call_state is False:
                 try:
+                    if left_times != times:
+                        logger.info('重试 {0} ===> 第 {1} 次'.format(function.__name__, times - left_times))
                     ret = yield function(*args, **kwargs)
                     if isinstance(ret, bool):
                         call_state = ret
