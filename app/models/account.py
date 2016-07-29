@@ -77,3 +77,7 @@ def get_available_account():
     cur_account.save()
     return cur_account
 
+
+def get_max_run_id(oj, nickname):
+    pass
+

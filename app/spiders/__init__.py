@@ -1,10 +1,16 @@
-from tornado import gen, httpclient
+import settings
 from bs4 import BeautifulSoup
-from logger import logger
+from tornado import gen, httpclient
+from tornado.queues import Queue
+from app.logger import logger
 from app.exceptions import LoadPageException
 
 USER_AGENT = 'Mozilla/5.0 (Windows NT 6.3; WOW64)AppleWebKit/537.36 (KHTML, like Gecko) ' \
              'Chrome/51.0.2704.103 Safari/537.36'
+
+
+# 数据缓存池
+DataPool = Queue(maxsize=settings.DATA_POOL_SIZE)
 
 
 class HttpMethod:
@@ -19,6 +25,9 @@ class Spider:
 
     def __init__(self):
         pass
+
+    def __repr__(self):
+        return '<{}Spider>'.format(self.TAG)
 
     @staticmethod
     def fetch(url, callback=None, raise_error=True, **kwargs):
@@ -46,8 +55,10 @@ class Spider:
         finally:
             return response
 
-    def __repr__(self):
-        return '<{}Spider>'.format(self.TAG)
+    @staticmethod
+    def put_queue(item_list):
+        for item in item_list:
+            yield DataPool.put(item)
 
     @gen.coroutine
     def run(self):

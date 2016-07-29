@@ -7,6 +7,7 @@ redis = py_redis.StrictRedis(**redis_config)
 
 # keys define
 switch_key = RedisKey.prefix + RedisKey.switch
+hdu_key = RedisKey.prefix + RedisKey.hdu
 
 
 def setup_redis():

@@ -2,10 +2,11 @@ import sys
 import settings
 from tornado import gen
 from tornado.queues import Queue
-from app.models import account
 from app.logger import logger
-from app.spiders import HduSpider, BnuSpider, VjudgeSpider, UvaSpider,\
-    CodeforcesSpider, PojSpider, BestcoderSpider, ZojSpider
+from app.models import account, submit
+from app.spiders import DataPool
+from app.spiders import HduSpider, BnuSpider, VjudgeSpider, CodeforcesSpider
+from app.spiders import PojSpider, BestcoderSpider, ZojSpider, UvaSpider
 
 
 # account 队列
@@ -15,9 +16,6 @@ AccountQueue = Queue(maxsize=settings.MAX_QUEUE_SIZE)
 SpiderFactory = {
     oj: Queue(maxsize=settings.SPIDER_CACHE_SIZE) for oj in settings.SUPPORT_OJ
 }
-
-# 数据缓存池
-DataPool = Queue(maxsize=settings.DATA_POOL_SIZE)
 
 
 def spider_init():
@@ -61,18 +59,19 @@ def spider_runner(idx):
 def data_pool_consumer():
     logger.info('[DataPool] consumer start working')
     while True:
-        size = min(DataPool.qsize(), settings.BATCH_SAVE_SIZE)
-        if size == 0:
+        if DataPool.empty():
             yield gen.sleep(10)
         else:
-            pass
+            while not DataPool.empty():
+                new_submit = yield DataPool.get()
+                submit.create_submit(new_submit)
 
 
 @gen.coroutine
 def main():
     # yield [spider_runner(i) for i in range(settings.WORKER_SIZE)]
 
-    yield HduSpider.HduSpider().run()
+    # yield HduSpider.HduSpider().run()
     # yield BnuSpider.BnuSpider().run()
     # yield VjudgeSpider.VjudgeSpider().run()
     # yield CodeforcesSpider.CodeforcesSpider().run()

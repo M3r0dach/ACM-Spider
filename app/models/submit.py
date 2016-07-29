@@ -37,3 +37,8 @@ class Submit(BaseModel):
     def delete(self):
         session.delete(self)
         session.commit()
+
+
+def create_submit(new_submit):
+    # TODO
+    pass

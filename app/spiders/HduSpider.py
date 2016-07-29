@@ -1,9 +1,22 @@
 from tornado import gen
 from urllib import parse
 from app.logger import logger
+from app.models import account
 from app.spiders import Spider, HttpMethod
 from app.exceptions import LoginException
 from app.decorators import try_run
+from app.redis_client import redis, hdu_key
+
+
+def set_max_run_id(nickname, run_id):
+    redis.hset(hdu_key, nickname, run_id)
+
+
+def get_max_run_id(nickname):
+    run_id = redis.hget(hdu_key, nickname)
+    if not run_id:
+        run_id = account.get_max_run_id('hdu', nickname)
+    return run_id or 0
 
 
 class HduSpider(Spider):
@@ -149,15 +162,17 @@ class HduSpider(Spider):
     @gen.coroutine
     def get_submits(self):
         first = ''
+        max_run_id = 0
         while True:
             status_list = yield self.fetch_status(first)
-            if not status_list:
+            if not status_list or len(status_list) == 0:
                 return
+            self.put_queue(status_list)
             first = int(status_list[-1]['run_id']) - 1
-            print(len(status_list))
-            if first <= int('11028525'):
+            max_run_id = max(max_run_id, int(status_list[0]['run_id']))
+            if first <= int(get_max_run_id('')):
                 return
-            # TODO
+        set_max_run_id('', max_run_id)
 
     @gen.coroutine
     def run(self):
