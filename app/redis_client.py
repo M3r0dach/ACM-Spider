@@ -8,13 +8,16 @@ redis = py_redis.StrictRedis(**redis_config)
 # keys define
 switch_key = RedisKey.prefix + RedisKey.switch
 hdu_key = RedisKey.prefix + RedisKey.hdu
+poj_key = RedisKey.prefix + RedisKey.poj
+bnu_key = RedisKey.prefix + RedisKey.bnu
+cf_key = RedisKey.prefix + RedisKey.codeforces
 
 
 def setup_redis():
     if not redis.exists(switch_key):
         ret = redis.hmset(switch_key, {oj: 1 for oj in SUPPORT_OJ})
         if ret:
-            logger.info('setup switch key success')
+            logger.info('[redis] setup switch key success')
     else:
         log_spider_status()
 

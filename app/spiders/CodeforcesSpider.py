@@ -1,8 +1,21 @@
 import json
 from tornado import gen
-from datetime import datetime, time
+from datetime import datetime
 from app.logger import logger
 from app.spiders import Spider
+from app.models import submit
+from app.redis_client import redis, cf_key
+
+
+def set_max_run_id(cur_account, run_id):
+    redis.hset(cf_key, cur_account.nickname, run_id)
+
+
+def get_max_run_id(cur_account):
+    run_id = redis.hget(cf_key, cur_account.nickname)
+    if not run_id:
+        run_id = submit.get_max_run_id(cur_account.user_id, 'cf')
+    return run_id or 0
 
 
 class CodeforcesSpider(Spider):
@@ -76,7 +89,19 @@ class CodeforcesSpider(Spider):
 
     @gen.coroutine
     def get_submits(self):
-        yield self.get_status('Rayn')
+        start, size = 1, 50
+        max_run_id = 0
+        while True:
+            status_list = yield self.get_status('Rayn', start, size)
+            if not status_list or len(status_list) == 0:
+                return
+            self.put_queue(status_list)
+            last = int(status_list[-1]['run_id']) - 1
+            max_run_id = max(max_run_id, int(status_list[0]['run_id']))
+            if last <= int(get_max_run_id(self.account)):
+                return
+            start += size
+        set_max_run_id(self.account, max_run_id)
 
     @gen.coroutine
     def run(self):

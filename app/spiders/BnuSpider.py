@@ -72,12 +72,12 @@ class BnuSpider(Spider):
             raise ex
 
     @staticmethod
-    def _gen_status_params(size=50):
+    def _gen_status_params(start=0, size=50):
         columns = 10
         params = {
             'sEcho': 1,
             'iColumns': columns,
-            'iDisplayStart': 0,
+            'iDisplayStart': start,
             'iDisplayLength': size,
             'sSearch': '',
             'bRegex': 'false',
@@ -109,22 +109,24 @@ class BnuSpider(Spider):
 
     @gen.coroutine
     def get_submits(self):
-        url = httputil.url_concat(self.status_url, self._gen_status_params())
-        response = yield self.fetch(url)
-        res = json.loads(response.body.decode('utf-8'))
-        status_data = res['aaData']
-        if len(status_data) == 0:
-            return
-        for row in status_data:
-            run_time = row[5][:-3] if row[5] != '' else '-1'
-            memory = row[6][:-3] if row[6] != '' else '-1'
-            code = yield self.get_code(row[1])
-            status = {
-                'run_id': row[1], 'pro_id': row[2], 'result': row[3], 'lang': row[4],
-                'run_time': run_time, 'memory': memory, 'submit_time': row[8], 'code': code
-            }
-            print(code)
-            # TODO
+        start, size = 0, 50
+        while True:
+            url = httputil.url_concat(self.status_url, self._gen_status_params())
+            response = yield self.fetch(url)
+            res = json.loads(response.body.decode('utf-8'))
+            status_data = res['aaData']
+            if len(status_data) == 0:
+                return
+            for row in status_data:
+                run_time = row[5][:-3] if row[5] != '' else '-1'
+                memory = row[6][:-3] if row[6] != '' else '-1'
+                code = yield self.get_code(row[1])
+                status = {
+                    'run_id': row[1], 'pro_id': row[2], 'result': row[3], 'lang': row[4],
+                    'run_time': run_time, 'memory': memory, 'submit_time': row[8], 'code': code
+                }
+                self.put_queue([status])
+            start += size
 
     @gen.coroutine
     def run(self):

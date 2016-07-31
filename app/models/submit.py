@@ -39,6 +39,14 @@ class Submit(BaseModel):
         session.commit()
 
 
+def get_max_run_id(user_id, oj_name):
+    last = session.query(Submit)\
+        .filter_by(user_id=user_id, oj_name=oj_name)\
+        .order_by(Submit.run_id.desc())\
+        .first()
+    return last and last.run_id
+
+
 def create_submit(new_submit):
     # TODO
     pass

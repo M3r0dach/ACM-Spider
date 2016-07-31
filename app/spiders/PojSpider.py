@@ -2,8 +2,21 @@ import re
 from tornado import gen
 from urllib import parse
 from app.logger import logger
+from app.models import submit
+from app.redis_client import redis, poj_key
 from app.spiders import Spider, HttpMethod
 from app.decorators import try_run
+
+
+def set_max_run_id(cur_account, run_id):
+    redis.hset(poj_key, cur_account.nickname, run_id)
+
+
+def get_max_run_id(cur_account):
+    run_id = redis.hget(poj_key, cur_account.nickname)
+    if not run_id:
+        run_id = submit.get_max_run_id(cur_account.user_id, 'poj')
+    return run_id or 0
 
 
 class PojSpider(Spider):
@@ -151,8 +164,18 @@ class PojSpider(Spider):
 
     @gen.coroutine
     def get_submits(self):
-        yield self.fetch_status()
-        # TODO
+        first = ''
+        max_run_id = 0
+        while True:
+            status_list = yield self.fetch_status(first)
+            if not status_list or len(status_list) == 0:
+                return
+            self.put_queue(status_list)
+            first = int(status_list[-1]['run_id'])
+            max_run_id = max(max_run_id, int(status_list[0]['run_id']))
+            if first <= int(get_max_run_id(self.account)):
+                return
+        set_max_run_id(self.account, max_run_id)
 
     @gen.coroutine
     def run(self):
