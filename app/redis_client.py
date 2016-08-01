@@ -22,14 +22,21 @@ def setup_redis():
         log_spider_status()
 
 
-def is_spider_opening(oj_name):
+def get_all_open_spider():
+    all_status = redis.hgetall(switch_key)
+    if all_status:
+        all_status = [k.decode() for k, v in all_status.items() if int(v) == 1]
+    return all_status or []
+
+
+def is_spider_open(oj_name):
     status = int(redis.hget(switch_key, oj_name))
     return status == 1
 
 
 def log_spider_status():
-    logger.info('[OJ_STATUS] {0}'.format(
-        redis.hgetall(switch_key)
+    logger.info('[OPEN Spider] {0}'.format(
+        get_all_open_spider()
     ))
 
 

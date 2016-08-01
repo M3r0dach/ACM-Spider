@@ -56,9 +56,11 @@ class Spider:
             return response
 
     @staticmethod
+    @gen.coroutine
     def put_queue(item_list):
         for item in item_list:
-            yield DataPool.put(item)
+            if 'account' in item:
+                yield DataPool.put(item)
 
     @gen.coroutine
     def run(self):

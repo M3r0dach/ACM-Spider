@@ -12,3 +12,5 @@ SessionFactory = sessionmaker(bind=engine)
 
 # base model
 BaseModel = declarative_base()
+
+session = SessionFactory()

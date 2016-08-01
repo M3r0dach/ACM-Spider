@@ -1,8 +1,11 @@
 from sqlalchemy import Column, Integer, String, DateTime, Text, ForeignKey
 from sqlalchemy.orm import relationship, backref
-from app.models import BaseModel, SessionFactory
+from app.models import BaseModel, session
 
-session = SessionFactory()
+
+class SubmitStatus:
+    GOOD = 0
+    BROKEN = 1
 
 
 class Submit(BaseModel):
@@ -25,7 +28,7 @@ class Submit(BaseModel):
     user = relationship('User', backref=backref('submit', lazy='dynamic'))
 
     def __init__(self):
-        pass
+        self.update_status = 0
 
     def __repr__(self):
         return u'User:"{0}" \tPID : {1} \tRUNID : {2}'.format(self.user_name, self.pro_id, self.run_id)
@@ -47,6 +50,23 @@ def get_max_run_id(user_id, oj_name):
     return last and last.run_id
 
 
-def create_submit(new_submit):
-    # TODO
-    pass
+def create_submit(data):
+    cur_account = data['account']
+    has = session.query(Submit)\
+        .filter_by(run_id=data['run_id'], oj_name=cur_account.oj_name)\
+        .first()
+    if not has:
+        new_submit = Submit()
+        new_submit.pro_id = data['pro_id']
+        new_submit.run_id = data['run_id']
+        new_submit.submit_time = data['submit_time']
+        new_submit.run_time = data['run_time']
+        new_submit.memory = data['memory']
+        new_submit.lang = data['lang']
+        new_submit.memory = data['memory']
+        new_submit.result = data['result']
+        new_submit.code = data['code']
+        new_submit.oj_name = cur_account.oj_name
+        new_submit.user = cur_account.user
+        new_submit.user_name = cur_account.user.name
+        new_submit.save()

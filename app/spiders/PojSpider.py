@@ -130,7 +130,7 @@ class PojSpider(Spider):
             return pre_node.text
         except Exception as ex:
             logger.error(ex)
-            logger.error('{} fetch {}\'s {} code error'.format(self.TAG, 'Raychat', run_id))
+            logger.error('{} fetch {}\'s {} code error'.format(self.TAG, self.account, run_id))
 
     @gen.coroutine
     def fetch_status(self, first=''):

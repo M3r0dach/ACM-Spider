@@ -2,11 +2,11 @@ import settings
 from sqlalchemy import Column, Integer, String, DateTime, ForeignKey
 from sqlalchemy import or_, orm
 from datetime import datetime, timedelta
-from app.models import BaseModel, SessionFactory
-from app.models.user import User
+from secret import Security
 from app.logger import logger
-
-session = SessionFactory()
+from app.models import BaseModel, session
+from app.models.user import User
+from app.redis_client import get_all_open_spider
 
 
 class AccountStatus:
@@ -40,8 +40,18 @@ class Account(BaseModel):
     def __repr__(self):
         return '<Account %s %s>' % (self.oj_name, self.nickname)
 
+    @property
+    def password(self):
+        return Security.decrypt(self.password_hash)
+
     def set_status(self, new_status):
         self.update_status = new_status
+        self.last_update_time = datetime.now()
+
+    def set_general(self, solved, submitted):
+        self.solved_or_rating = solved
+        self.submitted_or_max_rating = submitted
+        self.last_update_time = datetime.now()
 
     def save(self):
         session.add(self)
@@ -61,8 +71,11 @@ def init_all():
 
 def get_available_account():
     # 最近更新的忽略掉
+    all_open = get_all_open_spider()
     deadline = datetime.now() - timedelta(hours=settings.FETCH_TIMEDELTA)
-    cur_account = session.query(Account).filter(Account.update_status != AccountStatus.UPDATING)\
+    cur_account = session.query(Account)\
+        .filter(Account.oj_name.in_(all_open))\
+        .filter(Account.update_status != AccountStatus.UPDATING)\
         .filter(Account.update_status != AccountStatus.ACCOUNT_ERROR)\
         .filter(or_(Account.last_update_time < deadline,
                     Account.update_status != AccountStatus.NORMAL))\
@@ -76,8 +89,3 @@ def get_available_account():
     cur_account.set_status(AccountStatus.UPDATING)
     cur_account.save()
     return cur_account
-
-
-def get_max_run_id(oj, nickname):
-    pass
-

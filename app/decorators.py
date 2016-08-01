@@ -13,7 +13,8 @@ def try_run(times=3, duration=5):
             while left_times > 0 and call_state is False:
                 try:
                     if left_times != times:
-                        logger.info('重试 {0} ===> 第 {1} 次'.format(function.__name__, times - left_times))
+                        logger.warn('重试第 {0} 次 ===> {1}({2})'.format(times - left_times,
+                                                                     function.__name__, args))
                     ret = yield function(*args, **kwargs)
                     if isinstance(ret, bool):
                         call_state = ret
@@ -28,7 +29,7 @@ def try_run(times=3, duration=5):
                 finally:
                     left_times -= 1
             if call_state is False:
-                message = '<after try {0} times> def {1} call fail'.format(times, function.__name__)
+                message = '<After try {0} times> def {1}({2}) call fail'.format(times, function.__name__, args)
                 logger.error(message)
             return ret
         return wrapper
