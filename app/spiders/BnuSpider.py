@@ -3,8 +3,21 @@ from tornado import gen, httputil
 from urllib import parse
 from html import unescape
 from app.logger import logger
+from app.models import submit
 from app.spiders import Spider, HttpMethod
 from app.exceptions import LoginException
+from app.redis_client import redis, bnu_key
+
+
+def set_max_run_id(cur_account, run_id):
+    redis.hset(bnu_key, cur_account.nickname, run_id)
+
+
+def get_max_run_id(cur_account):
+    run_id = redis.hget(bnu_key, cur_account.nickname)
+    if not run_id:
+        run_id = submit.get_max_run_id(cur_account.user_id, 'bnu')
+    return run_id or 0
 
 
 class BnuSpider(Spider):

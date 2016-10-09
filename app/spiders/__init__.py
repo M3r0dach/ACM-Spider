@@ -13,6 +13,11 @@ USER_AGENT = 'Mozilla/5.0 (Windows NT 6.3; WOW64)AppleWebKit/537.36 (KHTML, like
 DataPool = Queue(maxsize=settings.DATA_POOL_SIZE)
 
 
+class DataType:
+    Submit = 0
+    Code = 1
+
+
 class HttpMethod:
     GET = 'GET'
     POST = 'POST'

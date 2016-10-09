@@ -6,7 +6,7 @@ from app.logger import logger
 from app.models import account, submit
 from app.redis_client import is_spider_open
 from app.exceptions import LoginException
-from app.spiders import DataPool
+from app.spiders import DataPool, DataType
 from app.spiders import HduSpider, BnuSpider, VjudgeSpider, CodeforcesSpider
 from app.spiders import PojSpider, BestcoderSpider, ZojSpider, UvaSpider
 
@@ -37,7 +37,7 @@ def account_producer():
     while True:
         cur = account.get_available_account()
         if cur and is_spider_open(cur.oj_name):
-            if cur.user.id > 20:
+            if cur.user.id > 5:
                 continue
             yield AccountQueue.put(cur)
             logger.info('{0} ===> account_queue(size={1})'.format(cur, AccountQueue.qsize()))
@@ -52,7 +52,7 @@ def spider_runner(idx):
         cur_account = yield AccountQueue.get()
         logger.info('[SpiderRunner #{0}] {1} <=== account_queue(size={2})'
                     .format(idx, cur_account, AccountQueue.qsize()))
-        # process spider.run()
+        # let spider.run()
         worker = yield SpiderFactory[cur_account.oj_name].get()
         worker.account = cur_account
         try:
@@ -61,9 +61,11 @@ def spider_runner(idx):
         except LoginException as ex:
             logger.error(ex)
             cur_account.set_status(account.AccountStatus.ACCOUNT_ERROR)
+            yield gen.sleep(60 * 5)
         except Exception as ex:
             logger.error(ex)
             cur_account.set_status(account.AccountStatus.UPDATE_ERROR)
+            yield gen.sleep(60 * 5)
         finally:
             cur_account.save()
 
@@ -76,13 +78,17 @@ def spider_runner(idx):
 
 @gen.coroutine
 def data_pool_consumer():
-    logger.info('[DataPool] consumer start working')
+    logger.info('[DataPool] consumer start working for process data')
     while True:
-        if DataPool.empty():
+        while DataPool.empty():
             yield gen.sleep(10)
-        else:
-            new_submit = yield DataPool.get()
-            submit.create_submit(new_submit)
+        new_data = yield DataPool.get()
+        if new_data['type'] == DataType.Submit:
+            submit.create_submit(new_data)
+        elif new_data['type'] == DataType.Code:
+            if not submit.update_code(new_data):
+                yield DataPool.put(new_data)
+        DataPool.task_done()
 
 
 @gen.coroutine

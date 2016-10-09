@@ -6,12 +6,12 @@ from secret import db_config
 SUPPORT_OJ = {
     'hdu': 'Hdu',
     'bnu': 'Bnu',
-    'vj': 'Vjudge',
-    'cf': 'Codeforces',
-    'zoj': 'Zoj',
-    'poj': 'Poj',
-    'uva': 'Uva',
-    'bc': 'Bestcoder'
+    # 'vj': 'Vjudge',
+    # 'cf': 'Codeforces',
+    # 'zoj': 'Zoj',
+    # 'poj': 'Poj',
+    # 'uva': 'Uva',
+    # 'bc': 'Bestcoder'
 }
 
 # directory
@@ -20,7 +20,7 @@ log_dir = base_dir + '/log/spider.log'
 log_level = logging.INFO
 
 # database
-DB_URI = 'mysql+pymysql://{username}:{pwd}@{host}/{db_name}'.format(**db_config)
+DB_URI = 'mysql+pymysql://{username}:{pwd}@{host}/{db_name}?charset=utf8'.format(**db_config)
 DB_SHOW_SQL = False
 
 # concurrency

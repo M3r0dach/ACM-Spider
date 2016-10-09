@@ -16,6 +16,7 @@ class AccountStatus:
     UPDATING = 3
     UPDATE_ERROR = 4
     ACCOUNT_ERROR = 5
+    RESET = 100
 
 
 class Account(BaseModel):
@@ -64,7 +65,7 @@ class Account(BaseModel):
 
 def init_all():
     logger.info("[AccountInit] all account which is UPDATING has changed into NOT_INIT")
-    session.query(Account).filter(Account.update_status == AccountStatus.UPDATING)\
+    session.query(Account).filter(Account.update_status != AccountStatus.RESET)\
         .update({Account.update_status: AccountStatus.NOT_INIT})
     session.commit()
 

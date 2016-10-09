@@ -28,7 +28,7 @@ class Submit(BaseModel):
     user = relationship('User', backref=backref('submit', lazy='dynamic'))
 
     def __init__(self):
-        self.update_status = 0
+        self.update_status = SubmitStatus.BROKEN
 
     def __repr__(self):
         return u'User:"{0}" \tPID : {1} \tRUNID : {2}'.format(self.user_name, self.pro_id, self.run_id)
@@ -43,11 +43,23 @@ class Submit(BaseModel):
 
 
 def get_max_run_id(user_id, oj_name):
-    last = session.query(Submit)\
+    ids = session.query(Submit.run_id)\
         .filter_by(user_id=user_id, oj_name=oj_name)\
-        .order_by(Submit.run_id.desc())\
-        .first()
-    return last and last.run_id
+        .order_by(Submit.run_id.asc())\
+        .all()
+    ret = 0
+    for run_id, in ids:
+        if run_id == SubmitStatus.BROKEN:
+            break
+        ret = run_id
+    return ret
+
+
+def get_error_submits(account):
+    return session.query(Submit.run_id) \
+        .filter_by(user_id=account.user_id, oj_name=account.oj_name,
+                   update_status=SubmitStatus.BROKEN) \
+        .all()
 
 
 def create_submit(data):
@@ -65,8 +77,24 @@ def create_submit(data):
         new_submit.lang = data['lang']
         new_submit.memory = data['memory']
         new_submit.result = data['result']
-        new_submit.code = data['code']
+        if data['code']:
+            new_submit.code = data['code']
+            new_submit.update_status = SubmitStatus.GOOD
+        else:
+            new_submit.update_status = SubmitStatus.BROKEN
         new_submit.oj_name = cur_account.oj_name
         new_submit.user = cur_account.user
         new_submit.user_name = cur_account.user.name
         new_submit.save()
+
+
+def update_code(data):
+    cur_account = data['account']
+    has = session.query(Submit) \
+        .filter_by(run_id=data['run_id'], oj_name=cur_account.oj_name) \
+        .first()
+    if not has:
+        return False
+    has.code = data['code']
+    has.update_status = SubmitStatus.GOOD
+    return True
