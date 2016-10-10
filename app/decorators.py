@@ -1,6 +1,6 @@
 from functools import wraps
-from logger import logger
 from tornado import gen
+from app.logger import logger
 
 
 def try_run(times=3, duration=5):

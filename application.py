@@ -11,7 +11,9 @@ from app import account_producer, main, spider_init,\
 if __name__ == '__main__':
     start = time.clock()
     setup_logger(settings.log_level, settings.log_dir)
-    logger.info('[ACM-Spider] 程序启动，初始化中 ......')
+    logger.info('--------------------------------------')
+    logger.info('--------------------------------------')
+    logger.info('[ACM-Spider] 程序启动，初始化中 .........')
     setup_redis()
     spider_init()
     account.init_all()

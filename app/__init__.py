@@ -61,11 +61,11 @@ def spider_runner(idx):
         except LoginException as ex:
             logger.error(ex)
             cur_account.set_status(account.AccountStatus.ACCOUNT_ERROR)
-            yield gen.sleep(60 * 5)
+            yield gen.sleep(60 * 2)
         except Exception as ex:
             logger.error(ex)
             cur_account.set_status(account.AccountStatus.UPDATE_ERROR)
-            yield gen.sleep(60 * 5)
+            yield gen.sleep(60 * 2)
         finally:
             cur_account.save()
 
@@ -84,7 +84,10 @@ def data_pool_consumer():
             yield gen.sleep(10)
         new_data = yield DataPool.get()
         if new_data['type'] == DataType.Submit:
-            submit.create_submit(new_data)
+            if submit.create_submit(new_data):
+                logger.info('[DataPool] success new status for <{} {} {}>'.format(
+                    new_data['account'].oj_name, new_data['run_id'], new_data['account'].nickname
+                ))
         elif new_data['type'] == DataType.Code:
             if not submit.update_code(new_data):
                 yield DataPool.put(new_data)

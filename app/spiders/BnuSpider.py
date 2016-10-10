@@ -4,20 +4,8 @@ from urllib import parse
 from html import unescape
 from app.logger import logger
 from app.models import submit
-from app.spiders import Spider, HttpMethod
+from app.spiders import Spider, HttpMethod, DataType
 from app.exceptions import LoginException
-from app.redis_client import redis, bnu_key
-
-
-def set_max_run_id(cur_account, run_id):
-    redis.hset(bnu_key, cur_account.nickname, run_id)
-
-
-def get_max_run_id(cur_account):
-    run_id = redis.hget(bnu_key, cur_account.nickname)
-    if not run_id:
-        run_id = submit.get_max_run_id(cur_account.user_id, 'bnu')
-    return run_id or 0
 
 
 class BnuSpider(Spider):
@@ -113,9 +101,12 @@ class BnuSpider(Spider):
         try:
             response = yield self.load_page(url, {'cookie': self.cookie})
             if not response:
+                logger.error('{} {} Fail to load code {} page'.format(self.TAG, self.account, run_id))
+                logger.error('{}: {}'.format(self.TAG, response))
                 return False
             res = json.loads(response.body.decode('utf-8'))
             code = res['source']
+            logger.debug('{} {} Success to load code {} page'.format(self.TAG, self.account, run_id))
             return unescape(code)
         except Exception as ex:
             logger.error('{} fetch {}\'s {} code error {}'.format(self.TAG, 'Rayn', run_id, ex))
@@ -124,22 +115,40 @@ class BnuSpider(Spider):
     def get_submits(self):
         start, size = 0, 50
         while True:
-            url = httputil.url_concat(self.status_url, self._gen_status_params())
+            url = httputil.url_concat(self.status_url, self._gen_status_params(start, size))
             response = yield self.fetch(url)
             res = json.loads(response.body.decode('utf-8'))
             status_data = res['aaData']
             if len(status_data) == 0:
-                return
+                break
+            status_list = []
             for row in status_data:
                 run_time = row[5][:-3] if row[5] != '' else '-1'
                 memory = row[6][:-3] if row[6] != '' else '-1'
-                code = yield self.get_code(row[1])
                 status = {
+                    'type': DataType.Submit, 'account': self.account, 'status': submit.SubmitStatus.BROKEN,
                     'run_id': row[1], 'pro_id': row[2], 'result': row[3], 'lang': row[4],
-                    'run_time': run_time, 'memory': memory, 'submit_time': row[8], 'code': code
+                    'run_time': run_time, 'memory': memory, 'submit_time': row[8], 'code': None
+                }
+                status_list.append(status)
+            logger.debug('{} {} Success to get {} new status'.format(self.TAG, self.account, len(status_list)))
+            self.put_queue(status_list)
+            start += size
+
+    @gen.coroutine
+    def fetch_code(self):
+        error_submits = submit.get_error_submits(self.account)
+        for run_id, in error_submits:
+            code = yield self.get_code(run_id)
+            if not code:
+                yield gen.sleep(60 * 2)
+            else:
+                status = {
+                    'type': DataType.Code, 'account': self.account,
+                    'run_id': run_id, 'code': code
                 }
                 self.put_queue([status])
-            start += size
+                yield gen.sleep(30)
 
     @gen.coroutine
     def run(self):
@@ -147,4 +156,4 @@ class BnuSpider(Spider):
         if not self.has_login:
             raise LoginException('{} login error {}'.format(self.TAG, self.account))
         yield self.get_solved()
-        yield self.get_submits()
+        yield [self.get_submits(), self.fetch_code()]

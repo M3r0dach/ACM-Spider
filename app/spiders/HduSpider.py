@@ -1,23 +1,10 @@
 from tornado import gen
-from tornado.queues import Queue
 from urllib import parse
 from app.logger import logger
 from app.models import submit
 from app.spiders import Spider, HttpMethod, DataType
 from app.exceptions import LoginException
 from app.decorators import try_run
-from app.redis_client import redis, hdu_key
-
-
-def set_max_run_id(cur_account, run_id):
-    redis.hset(hdu_key, cur_account.nickname, run_id)
-
-
-def get_max_run_id(cur_account):
-    run_id = redis.hget(hdu_key, cur_account.nickname)
-    if not run_id:
-        run_id = submit.get_max_run_id(cur_account.user_id, 'hdu')
-    return run_id or 0
 
 
 class HduSpider(Spider):
@@ -45,7 +32,7 @@ class HduSpider(Spider):
         self.cookie = response.headers['Set-Cookie']
         if self.cookie:
             self.cookie = self.cookie.split(';')[0] + ';'
-            logger.info('{} fetch cookie success'.format(self.TAG))
+            logger.info('{} {} fetch cookie success'.format(self.TAG, self.account))
             return True
         else:
             self.cookie = ''
@@ -126,9 +113,11 @@ class HduSpider(Spider):
             soup = self.get_lxml_bs4(response.body)
             code_area = soup.find('textarea', id='usercode')
             if not code_area:
-                logger.error('{} Fail to load code {} page'.format(self.TAG, run_id))
+                logger.error('{} {} Fail to load code {} page'.format(self.TAG, self.account, run_id))
+                logger.error('{}: {}'.format(self.TAG, code_area))
                 return False
             code = code_area.text
+            logger.debug('{} {} Success to load code {} page'.format(self.TAG, self.account, run_id))
             return code
         except Exception as ex:
             logger.error(ex)
@@ -165,17 +154,13 @@ class HduSpider(Spider):
     @gen.coroutine
     def get_submits(self):
         first = ''
-        max_run_id = 0
         while True:
             status_list = yield self.fetch_status(first)
             if not status_list or len(status_list) == 0:
                 break
+            logger.debug('{} {} Success to get {} new status'.format(self.TAG, self.account, len(status_list)))
             self.put_queue(status_list)
             first = int(status_list[-1]['run_id']) - 1
-            max_run_id = max(max_run_id, int(status_list[0]['run_id']))
-            if first <= int(get_max_run_id(self.account)):
-                break
-        set_max_run_id(self.account, max_run_id)
 
     @gen.coroutine
     def fetch_code(self):
@@ -183,21 +168,21 @@ class HduSpider(Spider):
         for run_id, in error_submits:
             code = yield self.get_code(run_id)
             if not code:
-                yield gen.sleep(60 * 3)
+                yield gen.sleep(60 * 2)
             else:
                 status = {
                     'type': DataType.Code, 'account': self.account,
                     'run_id': run_id, 'code': code
                 }
                 self.put_queue([status])
-                yield gen.sleep(60)
+                yield gen.sleep(30)
 
     @gen.coroutine
     def run(self):
         yield self.fetch_cookie()
         yield self.login()
         if not self.has_login:
-            raise LoginException('{} login error {}'.format(self.TAG, self.account))
+            raise LoginException('{} {} login error'.format(self.TAG, self.account))
         general = yield self.get_solved()
         if general and 'solved' in general:
             self.account.set_general(general['solved'], general['submitted'])

@@ -42,19 +42,6 @@ class Submit(BaseModel):
         session.commit()
 
 
-def get_max_run_id(user_id, oj_name):
-    ids = session.query(Submit.run_id)\
-        .filter_by(user_id=user_id, oj_name=oj_name)\
-        .order_by(Submit.run_id.asc())\
-        .all()
-    ret = 0
-    for run_id, in ids:
-        if run_id == SubmitStatus.BROKEN:
-            break
-        ret = run_id
-    return ret
-
-
 def get_error_submits(account):
     return session.query(Submit.run_id) \
         .filter_by(user_id=account.user_id, oj_name=account.oj_name,
@@ -86,6 +73,7 @@ def create_submit(data):
         new_submit.user = cur_account.user
         new_submit.user_name = cur_account.user.name
         new_submit.save()
+        return True
 
 
 def update_code(data):

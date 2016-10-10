@@ -17,7 +17,7 @@ SUPPORT_OJ = {
 # directory
 base_dir = os.path.split(os.path.realpath(__file__))[0]
 log_dir = base_dir + '/log/spider.log'
-log_level = logging.INFO
+log_level = logging.DEBUG
 
 # database
 DB_URI = 'mysql+pymysql://{username}:{pwd}@{host}/{db_name}?charset=utf8'.format(**db_config)

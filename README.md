@@ -12,9 +12,9 @@
 ## 进度
 - [X] 全局日志
 - [X] 生产者/消费者队列
-- [ ] 异常，错误处理
-- [ ] HDU OJ Spider
-- [ ] BNU OJ Spider
+- [X] 异常，错误处理
+- [X] HDU OJ Spider
+- [X] BNU OJ Spider
 - [ ] Codeforces Spider
 - [ ] PKU OJ Spider
 - [ ] ZJU OJ Spider
