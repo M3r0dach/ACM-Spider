@@ -1,19 +1,21 @@
 import re
-from tornado import gen
 from urllib import parse
-from app.logger import logger
+
+from app.helpers.logger import logger
+from app.helpers.redis_client import redis, RedisKey
+from tornado import gen
+
+from app.helpers.decorators import try_run
 from app.models import submit
-from app.redis_client import redis, poj_key
 from app.spiders import Spider, HttpMethod
-from app.decorators import try_run
 
 
 def set_max_run_id(cur_account, run_id):
-    redis.hset(poj_key, cur_account.nickname, run_id)
+    redis.hset(RedisKey.poj, cur_account.nickname, run_id)
 
 
 def get_max_run_id(cur_account):
-    run_id = redis.hget(poj_key, cur_account.nickname)
+    run_id = redis.hget(RedisKey.poj, cur_account.nickname)
     if not run_id:
         run_id = submit.get_max_run_id(cur_account.user_id, 'poj')
     return run_id or 0

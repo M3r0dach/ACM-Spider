@@ -1,14 +1,14 @@
 import sys
-import settings
 from tornado import gen
 from tornado.queues import Queue
-from app.logger import logger
+from app.helpers.logger import logger
+from app.helpers.redis_client import is_spider_open
+from app.helpers.exceptions import LoginException
 from app.models import account, submit
-from app.redis_client import is_spider_open
-from app.exceptions import LoginException
 from app.spiders import DataPool, DataType
 from app.spiders import HduSpider, BnuSpider, VjudgeSpider, CodeforcesSpider
-from app.spiders import PojSpider, BestcoderSpider, ZojSpider, UvaSpider
+from app.spiders import PojSpider, BestcoderSpider, UvaSpider
+from config import settings
 
 
 # account 队列
@@ -37,8 +37,8 @@ def account_producer():
     while True:
         cur = account.get_available_account()
         if cur and is_spider_open(cur.oj_name):
-            if cur.user.id > 5:
-                continue
+            # if cur.user.id > 5:
+            #     continue
             yield AccountQueue.put(cur)
             logger.info('{0} ===> account_queue(size={1})'.format(cur, AccountQueue.qsize()))
         else:
@@ -83,11 +83,13 @@ def data_pool_consumer():
         while DataPool.empty():
             yield gen.sleep(10)
         new_data = yield DataPool.get()
+        # new submit
         if new_data['type'] == DataType.Submit:
             if submit.create_submit(new_data):
                 logger.info('[DataPool] success new status for <{} {} {}>'.format(
                     new_data['account'].oj_name, new_data['run_id'], new_data['account'].nickname
                 ))
+        # save the code
         elif new_data['type'] == DataType.Code:
             if not submit.update_code(new_data):
                 yield DataPool.put(new_data)

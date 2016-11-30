@@ -1,18 +1,18 @@
 import json
-from tornado import gen
 from datetime import datetime
-from app.logger import logger
-from app.spiders import Spider
+from tornado import gen
+from app.helpers.logger import logger
+from app.helpers.redis_client import redis, RedisKey
 from app.models import submit
-from app.redis_client import redis, cf_key
+from app.spiders import Spider
 
 
 def set_max_run_id(cur_account, run_id):
-    redis.hset(cf_key, cur_account.nickname, run_id)
+    redis.hset(RedisKey.codeforces, cur_account.nickname, run_id)
 
 
 def get_max_run_id(cur_account):
-    run_id = redis.hget(cf_key, cur_account.nickname)
+    run_id = redis.hget(RedisKey.codeforces, cur_account.nickname)
     if not run_id:
         run_id = submit.get_max_run_id(cur_account.user_id, 'cf')
     return run_id or 0

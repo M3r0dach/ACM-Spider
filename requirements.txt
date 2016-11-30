@@ -1,9 +1,8 @@
-beautifulsoup4==4.4.1
-lxml==3.6.0
+beautifulsoup4==4.5.1
+lxml==3.6.4
 pyDes==2.0.1
-PyMySQL==0.7.5
-pypiwin32==219
+PyMySQL==0.7.9
 redis==2.10.5
 requests==2.10.0
-SQLAlchemy==1.0.13
-tornado==4.3
+SQLAlchemy==1.1.4
+tornado==4.4.2

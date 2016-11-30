@@ -1,10 +1,10 @@
-from tornado import gen
 from urllib import parse
-from app.logger import logger
+from tornado import gen
+from app.helpers.decorators import try_run
+from app.helpers.logger import logger
+from app.helpers.exceptions import LoginException
 from app.models import submit
 from app.spiders import Spider, HttpMethod, DataType
-from app.exceptions import LoginException
-from app.decorators import try_run
 
 
 class HduSpider(Spider):

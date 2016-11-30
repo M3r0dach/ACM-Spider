@@ -3,38 +3,22 @@ from app.models import BaseModel, session
 
 
 class User(BaseModel):
-    __tablename__ = 'user'
+    __tablename__ = 'users'
 
     id = Column(Integer, primary_key=True)
-    username = Column(String(25), unique=True, index=True, nullable=False)
-    name = Column(String(25))
-    password_hash = Column(String(128))
-    stu_id = Column(String(20))
+    nickname = Column(String(255), unique=True, index=True, nullable=False)
+    display_name = Column(String(255), index=True, nullable=False)
+    password_digest = Column(String(1024))
     gender = Column(Boolean)
-    email = Column(String(65))
-    phone = Column(String(15))
-    remark = Column(String(50))
-    school = Column(String(20), nullable=False)
-    situation = Column(String(50))
-    score = Column(Integer, default=0)
-    current_week_submit = Column(Integer, default=0)
-    current_week_solved = Column(Integer, default=0)
-    last_week_submit = Column(Integer, default=0)
-    last_week_solved = Column(Integer, default=0)
-    create_time = Column(DateTime)
-    rights = Column(Integer)
-    active = Column(Integer, default=1)
+    avatar = Column(String(255))
+    role = Column(Integer)
+    status = Column(Integer, default=0)
+    description = Column(String(1024))
+    created_at = Column(DateTime, nullable=False)
+    updated_at = Column(DateTime, nullable=False)
 
     def __init__(self):
         pass
 
     def __repr__(self):
-        return '<User %s>' % self.name
-
-    def save(self):
-        session.add(self)
-        session.commit()
-
-    def delete(self):
-        session.delete(self)
-        session.commit()
+        return '<User {0}({1})>'.format(self.nickname, self.display_name)

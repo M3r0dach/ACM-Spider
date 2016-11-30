@@ -1,6 +1,6 @@
-from tornado import gen
 from urllib import parse
-from app.logger import logger
+from tornado import gen
+from app.helpers.logger import logger
 from app.spiders import Spider, HttpMethod
 
 

@@ -1,9 +1,9 @@
-import settings
 from bs4 import BeautifulSoup
 from tornado import gen, httpclient
 from tornado.queues import Queue
-from app.logger import logger
-from app.exceptions import LoadPageException
+from app.helpers.logger import logger
+from app.helpers.exceptions import LoadPageException
+from config import settings
 
 USER_AGENT = 'Mozilla/5.0 (Windows NT 6.3; WOW64)AppleWebKit/537.36 (KHTML, like Gecko) ' \
              'Chrome/51.0.2704.103 Safari/537.36'

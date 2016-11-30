@@ -1,11 +1,12 @@
 import json
-from tornado import gen, httputil
-from urllib import parse
 from html import unescape
-from app.logger import logger
+from urllib import parse
+from tornado import gen, httputil
+
+from app.helpers.logger import logger
+from app.helpers.exceptions import LoginException
 from app.models import submit
 from app.spiders import Spider, HttpMethod, DataType
-from app.exceptions import LoginException
 
 
 class BnuSpider(Spider):
@@ -27,8 +28,8 @@ class BnuSpider(Spider):
         if self.has_login:
             return True
         post_body = parse.urlencode({
-            'username': 'Rayn',
-            'password': '63005610',
+            'username': self.account.nickname,
+            'password': self.account.password,
             'cksave': 1,
             'login': 'Login'
         })
@@ -56,24 +57,24 @@ class BnuSpider(Spider):
 
     @gen.coroutine
     def get_solved(self):
-        url = self.user_url_prefix.format('Rayn')
+        url = self.user_url_prefix.format(self.account.nickname)
         try:
             response = yield self.load_page(url, {'cookie': self.cookie})
             if not response:
                 return False
             soup = self.get_lxml_bs4(response.body)
             solved = soup.find('button', id='showac').previous_sibling.string.strip()
-            submitted = soup.find('a', href='status.php?showname={}'.format('Rayn')).text
+            submitted = soup.find('a', href='status.php?showname={}'.format(self.account.nickname)).text
             return {
                 'solved': solved, 'submitted': submitted,
-                'solved_list': self._get_solved_list(soup)
+                # 'solved_list': self._get_solved_list(soup)
             }
         except Exception as ex:
             logger.error('{} get Solved/Submitted error {}: {}'.format(self.TAG, self.account, ex))
             raise ex
 
     @staticmethod
-    def _gen_status_params(start=0, size=50):
+    def _gen_status_params(nickname, start=0, size=50):
         columns = 10
         params = {
             'sEcho': 1,
@@ -89,7 +90,7 @@ class BnuSpider(Spider):
         for i in range(10):
             idx = str(i)
             params['mDataProp_' + idx] = i
-            params['sSearch_' + idx] = 'Rayn' if i == 0 else ''
+            params['sSearch_' + idx] = nickname if i == 0 else ''
             params['bRegex_' + idx] = 'false'
             params['bSearchable_' + idx] = 'true'
             params['bSortable_' + idx] = 'false'
@@ -102,20 +103,21 @@ class BnuSpider(Spider):
             response = yield self.load_page(url, {'cookie': self.cookie})
             if not response:
                 logger.error('{} {} Fail to load code {} page'.format(self.TAG, self.account, run_id))
-                logger.error('{}: {}'.format(self.TAG, response))
+                logger.error('{}: response => {}'.format(self.TAG, response))
                 return False
             res = json.loads(response.body.decode('utf-8'))
             code = res['source']
             logger.debug('{} {} Success to load code {} page'.format(self.TAG, self.account, run_id))
             return unescape(code)
         except Exception as ex:
-            logger.error('{} fetch {}\'s {} code error {}'.format(self.TAG, 'Rayn', run_id, ex))
+            logger.error('{} fetch {}\'s {} code error {}'.format(self.TAG, self.account, run_id, ex))
 
     @gen.coroutine
     def get_submits(self):
         start, size = 0, 50
         while True:
-            url = httputil.url_concat(self.status_url, self._gen_status_params(start, size))
+            url = httputil.url_concat(self.status_url,
+                                      self._gen_status_params(self.account.nickname, start, size))
             response = yield self.fetch(url)
             res = json.loads(response.body.decode('utf-8'))
             status_data = res['aaData']
@@ -126,7 +128,8 @@ class BnuSpider(Spider):
                 run_time = row[5][:-3] if row[5] != '' else '-1'
                 memory = row[6][:-3] if row[6] != '' else '-1'
                 status = {
-                    'type': DataType.Submit, 'account': self.account, 'status': submit.SubmitStatus.BROKEN,
+                    'type': DataType.Submit, 'account': self.account,
+                    'status': submit.SubmitStatus.BROKEN,
                     'run_id': row[1], 'pro_id': row[2], 'result': row[3], 'lang': row[4],
                     'run_time': run_time, 'memory': memory, 'submit_time': row[8], 'code': None
                 }
@@ -155,5 +158,8 @@ class BnuSpider(Spider):
         yield self.login()
         if not self.has_login:
             raise LoginException('{} login error {}'.format(self.TAG, self.account))
-        yield self.get_solved()
+        general = yield self.get_solved()
+        if general and 'solved' in general:
+            self.account.set_general(general['solved'], general['submitted'])
+            self.account.save()
         yield [self.get_submits(), self.fetch_code()]

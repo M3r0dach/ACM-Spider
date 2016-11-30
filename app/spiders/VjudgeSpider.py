@@ -1,17 +1,17 @@
 import json
-from tornado import gen
-from urllib import parse
 from datetime import datetime
-from app.logger import logger
+from urllib import parse
+from tornado import gen
+from app.helpers.logger import logger
+from app.helpers.exceptions import LoginException
 from app.spiders import Spider, HttpMethod
-from app.exceptions import LoginException
 
 
 class VjudgeSpider(Spider):
     TAG = '[Virtual Judge]'
     domain = 'http://acm.hust.edu.cn'
     login_url = domain + '/vjudge/user/login.action'
-    status_url = domain + '/vjudge/status/data/'
+    status_url = domain + '/vjudge/user/submissions?username={}&pageSize={}&maxId={}'
     code_url_prefix = domain + '/vjudge/problem/source/{0}'
 
     def __init__(self):
@@ -25,8 +25,8 @@ class VjudgeSpider(Spider):
         if self.has_login:
             return True
         post_body = parse.urlencode({
-            'username': 'HotWhite',
-            'password': 'cuitasdf'
+            'username': 'Rayn',
+            'password': '63005610'
         })
         headers = {
             'Host': 'acm.hust.edu.cn',
@@ -47,33 +47,6 @@ class VjudgeSpider(Spider):
     @gen.coroutine
     def get_solved(self):
         pass
-
-    @staticmethod
-    def _gen_status_params(size=20):
-        params = {
-            'draw': 0,
-            'start': 0,
-            'length': size,
-            'search[value]': '',
-            'search[regex]': 'false',
-            'order[0][column]': 0,
-            'order[0][dir]': 'desc',
-            'un': 'HotWhite',
-            'OJId': 'All',
-            'probNum': '',
-            'res': 0,
-            'language': '',
-            'orderBy': 'run_id'
-        }
-        for i in range(12):
-            idx = str(i)
-            params['columns[' + idx + '][data]'] = idx
-            params['columns[' + idx + '][name]'] = 0
-            params['columns[' + idx + '][searchable]'] = 'true'
-            params['columns[' + idx + '][orderable]'] = 'false'
-            params['columns[' + idx + '][search][value]'] = 'false'
-            params['columns[' + idx + '][search][regex]'] = 'false'
-        return params
 
     @gen.coroutine
     def get_code(self, run_id):

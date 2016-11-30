@@ -1,12 +1,14 @@
-import settings
 import time
+
+from app.helpers.logger import setup_logger, logger
 from tornado import ioloop
-from app.models import account
-from app.logger import setup_logger, logger
-from app.redis_client import setup_redis, get_all_open_spider
+
 from app import account_producer, main, spider_init,\
     data_pool_consumer
-
+from app.helpers.redis_client import setup_redis
+from app.models import account
+from config import settings
+from api import make_app
 
 if __name__ == '__main__':
     start = time.clock()

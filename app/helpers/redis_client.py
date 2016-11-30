@@ -1,21 +1,14 @@
 import redis as py_redis
-from secret import redis_config, RedisKey
-from settings import SUPPORT_OJ
-from app.logger import logger
+from config.secret import redis_config, RedisKey
+
+from app.helpers.logger import logger
+from config.settings import SUPPORT_OJ
 
 redis = py_redis.StrictRedis(**redis_config)
 
-# keys define
-switch_key = RedisKey.prefix + RedisKey.switch
-hdu_key = RedisKey.prefix + RedisKey.hdu
-poj_key = RedisKey.prefix + RedisKey.poj
-bnu_key = RedisKey.prefix + RedisKey.bnu
-cf_key = RedisKey.prefix + RedisKey.codeforces
-
-
 def setup_redis():
-    if not redis.exists(switch_key):
-        ret = redis.hmset(switch_key, {oj: 1 for oj in SUPPORT_OJ})
+    if not redis.exists(RedisKey.switch):
+        ret = redis.hmset(RedisKey.switch, {oj: 1 for oj in SUPPORT_OJ})
         if ret:
             logger.info('[redis] setup switch key success')
     else:
@@ -23,14 +16,14 @@ def setup_redis():
 
 
 def get_all_open_spider():
-    all_status = redis.hgetall(switch_key)
+    all_status = redis.hgetall(RedisKey.switch)
     if all_status:
         all_status = [k.decode() for k, v in all_status.items() if int(v) == 1]
     return all_status or []
 
 
 def is_spider_open(oj_name):
-    status = int(redis.hget(switch_key, oj_name))
+    status = int(redis.hget(RedisKey.switch, oj_name))
     return status == 1
 
 

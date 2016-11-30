@@ -1,6 +1,6 @@
 from functools import wraps
 from tornado import gen
-from app.logger import logger
+from app.helpers.logger import logger
 
 
 def try_run(times=3, duration=5):
@@ -29,7 +29,7 @@ def try_run(times=3, duration=5):
                 finally:
                     left_times -= 1
             if call_state is False:
-                message = '<After try {0} times> def {1}({2}) call fail'.format(times, function.__name__, args)
+                message = '[已经重试 {0} 次] def {1}({2}) call fail'.format(times, function.__name__, args)
                 logger.error(message)
             return ret
         return wrapper
