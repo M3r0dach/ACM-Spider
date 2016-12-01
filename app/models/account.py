@@ -6,6 +6,7 @@ from app.helpers.logger import logger
 from app.helpers.redis_client import get_all_open_spider
 from app.models import BaseModel, session
 from app.models.user import User
+from app.models.submit import Submit
 from config import settings
 
 
@@ -47,12 +48,20 @@ class Account(BaseModel):
     def user(self):
         return session.query(User).filter_by(id=self.user_id).first()
 
+    @property
+    def submits(self):
+        return session.query(Submit)\
+            .filter_by(user_id=self.user_id, oj_name=self.oj_name) \
+            .all()
+
     def set_status(self, new_status):
         self.status = new_status
 
     def set_general(self, solved, submitted):
         self.solved = solved
         self.submitted = submitted
+        logger.info('{} 更新 solved: {} / submitted: {}'.format(self, solved, submitted))
+
 
     def save(self):
         self.updated_at = datetime.now()
@@ -70,6 +79,8 @@ def init_all():
 def get_available_account():
     # 最近更新的忽略掉
     all_open = get_all_open_spider()
+    if len(all_open) == 0:
+        return
     deadline = datetime.now() - timedelta(hours=settings.FETCH_TIMEDELTA)
     cur_account = session.query(Account)\
         .filter(Account.oj_name.in_(all_open))\

@@ -1,6 +1,5 @@
 import logging
 import os
-
 from config.secret import db_config
 
 # support oj
@@ -8,10 +7,8 @@ SUPPORT_OJ = {
     'hdu': 'Hdu',
     'bnu': 'Bnu',
     'vj': 'Vjudge',
-    # 'cf': 'Codeforces',
-    # 'zoj': 'Zoj',
-    # 'poj': 'Poj',
-    # 'uva': 'Uva',
+    'cf': 'Codeforces',
+    'poj': 'Poj',
     # 'bc': 'Bestcoder'
 }
 

@@ -1,24 +1,11 @@
 import re
 from urllib import parse
-
-from app.helpers.logger import logger
-from app.helpers.redis_client import redis, RedisKey
 from tornado import gen
-
+from app.helpers.exceptions import LoginException
+from app.helpers.logger import logger
 from app.helpers.decorators import try_run
+from app.spiders import Spider, HttpMethod, DataType
 from app.models import submit
-from app.spiders import Spider, HttpMethod
-
-
-def set_max_run_id(cur_account, run_id):
-    redis.hset(RedisKey.poj, cur_account.nickname, run_id)
-
-
-def get_max_run_id(cur_account):
-    run_id = redis.hget(RedisKey.poj, cur_account.nickname)
-    if not run_id:
-        run_id = submit.get_max_run_id(cur_account.user_id, 'poj')
-    return run_id or 0
 
 
 class PojSpider(Spider):
@@ -54,8 +41,8 @@ class PojSpider(Spider):
         if self.has_login:
             return True
         post_body = parse.urlencode({
-            'user_id1': 'Raychat',
-            'password1': '63005610',
+            'user_id1': self.account.nickname,
+            'password1': self.account.password,
             'B1': 'login',
             'url': '/'
         })
@@ -175,13 +162,27 @@ class PojSpider(Spider):
             self.put_queue(status_list)
             first = int(status_list[-1]['run_id'])
             max_run_id = max(max_run_id, int(status_list[0]['run_id']))
-            if first <= int(get_max_run_id(self.account)):
-                return
-        set_max_run_id(self.account, max_run_id)
+
+    @gen.coroutine
+    def fetch_code(self):
+        error_submits = submit.get_error_submits(self.account)
+        for run_id, in error_submits:
+            code = yield self.get_code(run_id)
+            if not code:
+                yield gen.sleep(60 * 2)
+            else:
+                status = {
+                    'type': DataType.Code, 'account': self.account,
+                    'run_id': run_id, 'code': code
+                }
+                self.put_queue([status])
+                yield gen.sleep(30)
 
     @gen.coroutine
     def run(self):
         yield self.fetch_cookie()
         yield self.login()
+        if not self.has_login:
+            raise LoginException('{} login error {}'.format(self.TAG, self.account))
         yield self.get_solved()
         yield self.get_submits()

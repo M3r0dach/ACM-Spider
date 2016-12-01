@@ -1,9 +1,15 @@
+import traceback
 from functools import wraps
 from tornado import gen
 from app.helpers.logger import logger
 
 
-def try_run(times=3, duration=5):
+#
+# try_run
+# @times    重试次数
+# @duration 每次重试之间间隔(分钟)
+#
+def try_run(times=3, duration=1):
     def decorator(function):
         @gen.coroutine
         @wraps(function)
@@ -13,19 +19,16 @@ def try_run(times=3, duration=5):
             while left_times > 0 and call_state is False:
                 try:
                     if left_times != times:
-                        logger.warn('重试第 {0} 次 ===> {1}({2})'.format(times - left_times,
-                                                                     function.__name__, args))
+                        logger.warn('[重试第 {0} 次] ===> {1}({2})'.format(
+                            times - left_times, function.__name__, args))
+
                     ret = yield function(*args, **kwargs)
-                    if isinstance(ret, bool):
-                        call_state = ret
-                    elif not ret:
-                        call_state = False
-                    else:
-                        call_state = True
+                    call_state = True if ret else False
                     if not call_state:
-                        yield gen.sleep(duration)
+                        yield gen.sleep(duration * 60)
                 except Exception as e:
                     logger.error(e)
+                    logger.error(traceback.format_exc())
                 finally:
                     left_times -= 1
             if call_state is False:

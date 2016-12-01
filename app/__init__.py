@@ -1,4 +1,5 @@
 import sys
+import traceback
 from tornado import gen
 from tornado.queues import Queue
 from app.helpers.logger import logger
@@ -7,7 +8,7 @@ from app.helpers.exceptions import LoginException
 from app.models import account, submit
 from app.spiders import DataPool, DataType
 from app.spiders import HduSpider, BnuSpider, VjudgeSpider, CodeforcesSpider
-from app.spiders import PojSpider, BestcoderSpider, UvaSpider
+from app.spiders import PojSpider, BestcoderSpider
 from config import settings
 
 
@@ -27,7 +28,7 @@ def spider_init():
         spider_class = getattr(sys.modules['app.spiders.' + spider_name],
                                spider_name)
         while oj_queue.qsize() < oj_queue.maxsize:
-            oj_queue.put(spider_class())
+            oj_queue.put_nowait(spider_class())
         logger.info('[{0}] cache queue INIT OK => size {1}'.format(spider_name, oj_queue.qsize()))
 
 
@@ -64,6 +65,7 @@ def spider_runner(idx):
             yield gen.sleep(60 * 2)
         except Exception as ex:
             logger.error(ex)
+            logger.error(traceback.format_exc())
             cur_account.set_status(account.AccountStatus.UPDATE_ERROR)
             yield gen.sleep(60 * 2)
         finally:
@@ -86,18 +88,22 @@ def data_pool_consumer():
         # new submit
         if new_data['type'] == DataType.Submit:
             if submit.create_submit(new_data):
-                logger.info('[DataPool] success new status for <{} {} {}>'.format(
+                logger.info('[DataPool] 存进新提交 for <{} {} {}>'.format(
                     new_data['account'].oj_name, new_data['run_id'], new_data['account'].nickname
                 ))
         # save the code
         elif new_data['type'] == DataType.Code:
-            if not submit.update_code(new_data):
+            if submit.update_code(new_data):
+                logger.info('[DataPool] 更新代码 for <{} {} {}>'.format(
+                    new_data['account'].oj_name, new_data['run_id'], new_data['account'].nickname
+                ))
+            else:
                 yield DataPool.put(new_data)
         DataPool.task_done()
 
 
 @gen.coroutine
-def main():
+def spider_main():
     yield [spider_runner(i) for i in range(settings.WORKER_SIZE)]
 
     # yield HduSpider.HduSpider().run()
@@ -106,4 +112,11 @@ def main():
     # yield CodeforcesSpider.CodeforcesSpider().run()
     # yield PojSpider.PojSpider().run()
     # yield BestcoderSpider.BestcoderSpider().run()
-    pass
+
+
+def make_spider_app(loop):
+    account.init_all()
+    spider_init()
+    loop.spawn_callback(data_pool_consumer)
+    loop.spawn_callback(account_producer)
+    loop.spawn_callback(spider_main)

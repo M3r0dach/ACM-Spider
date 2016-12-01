@@ -6,6 +6,7 @@ from config.settings import SUPPORT_OJ
 
 redis = py_redis.StrictRedis(**redis_config)
 
+
 def setup_redis():
     if not redis.exists(RedisKey.switch):
         ret = redis.hmset(RedisKey.switch, {oj: 1 for oj in SUPPORT_OJ})
@@ -34,12 +35,12 @@ def log_spider_status():
 
 
 def turn_on_spider(oj_name):
-    if redis.exists(switch_key):
-        redis.hset(switch_key, oj_name, 1)
+    if redis.exists(RedisKey.switch):
+        redis.hset(RedisKey.switch, oj_name, 1)
     log_spider_status()
 
 
 def turn_off_spider(oj_name):
-    if redis.exists(switch_key):
-        redis.hset(switch_key, oj_name, 0)
+    if redis.exists(RedisKey.switch):
+        redis.hset(RedisKey.switch, oj_name, 0)
     log_spider_status()

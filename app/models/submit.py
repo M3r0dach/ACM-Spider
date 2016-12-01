@@ -23,6 +23,7 @@ class Submit(BaseModel):
     submitted_at = Column(DateTime)
     status = Column(Integer)
     oj_name = Column(String(32))
+    origin_oj = Column(String(32))
     user_id = Column(Integer)
     user_name = Column(String)
     created_at = Column(DateTime, nullable=False)
@@ -68,6 +69,8 @@ def create_submit(data):
         else:
             new_submit.status = SubmitStatus.BROKEN
         new_submit.oj_name = cur_account.oj_name
+        if data['origin_oj']:
+            new_submit.origin_oj = data['origin_oj']
         new_submit.user_id = cur_account.user.id
         new_submit.user_name = cur_account.user.display_name
         new_submit.created_at = datetime.now()
@@ -84,4 +87,5 @@ def update_code(data):
         return False
     has.code = data['code']
     has.status = SubmitStatus.GOOD
+    has.save()
     return True

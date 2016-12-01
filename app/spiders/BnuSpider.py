@@ -4,6 +4,7 @@ from urllib import parse
 from tornado import gen, httputil
 
 from app.helpers.logger import logger
+from app.helpers.decorators import try_run
 from app.helpers.exceptions import LoginException
 from app.models import submit
 from app.spiders import Spider, HttpMethod, DataType
@@ -23,6 +24,7 @@ class BnuSpider(Spider):
         self.has_login = False
         self.account = None
 
+    @try_run(3)
     @gen.coroutine
     def login(self):
         if self.has_login:
