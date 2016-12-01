@@ -165,7 +165,7 @@ class HduSpider(Spider):
     @gen.coroutine
     def fetch_code(self):
         error_submits = submit.get_error_submits(self.account)
-        for run_id, in error_submits:
+        for run_id, _ in error_submits:
             code = yield self.get_code(run_id)
             if not code:
                 yield gen.sleep(60 * 2)

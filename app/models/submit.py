@@ -42,7 +42,7 @@ class Submit(BaseModel):
 
 
 def get_error_submits(account):
-    return session.query(Submit.run_id) \
+    return session.query(Submit.run_id, Submit.pro_id) \
         .filter_by(user_id=account.user_id, oj_name=account.oj_name,
                    status=SubmitStatus.BROKEN) \
         .all()
@@ -69,7 +69,7 @@ def create_submit(data):
         else:
             new_submit.status = SubmitStatus.BROKEN
         new_submit.oj_name = cur_account.oj_name
-        if data['origin_oj']:
+        if 'origin_oj' in data and data['origin_oj']:
             new_submit.origin_oj = data['origin_oj']
         new_submit.user_id = cur_account.user.id
         new_submit.user_name = cur_account.user.display_name

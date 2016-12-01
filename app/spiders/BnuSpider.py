@@ -132,18 +132,20 @@ class BnuSpider(Spider):
                 status = {
                     'type': DataType.Submit, 'account': self.account,
                     'status': submit.SubmitStatus.BROKEN,
-                    'run_id': row[1], 'pro_id': row[2], 'result': row[3], 'lang': row[4],
-                    'run_time': run_time, 'memory': memory, 'submit_time': row[8], 'code': None
+                    'run_id': row[1], 'pro_id': row[2], 'result': row[3],
+                    'lang': row[4], 'run_time': run_time, 'memory': memory,
+                    'submit_time': row[8], 'code': None
                 }
                 status_list.append(status)
-            logger.debug('{} {} Success to get {} new status'.format(self.TAG, self.account, len(status_list)))
+            logger.debug('{} {} Success to get {} new status'.format(
+                self.TAG, self.account, len(status_list)))
             self.put_queue(status_list)
             start += size
 
     @gen.coroutine
     def fetch_code(self):
         error_submits = submit.get_error_submits(self.account)
-        for run_id, in error_submits:
+        for run_id, _ in error_submits:
             code = yield self.get_code(run_id)
             if not code:
                 yield gen.sleep(60 * 2)

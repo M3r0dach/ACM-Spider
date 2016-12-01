@@ -18,7 +18,7 @@
 - [X] HTTP 接口可开关 Spider
 - [X] HDU OJ Spider
 - [X] BNU OJ Spider
-- [ ] Codeforces Spider
-- [ ] PKU OJ Spider
+- [X] Codeforces Spider
+- [X] PKU OJ Spider
 - [X] HUST Virtual Judge Spider
 - [ ] BestCoder Spider
