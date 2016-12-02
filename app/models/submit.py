@@ -1,7 +1,7 @@
 from datetime import datetime
-from sqlalchemy import Column, Integer, String, DateTime, Text, ForeignKey
-from sqlalchemy.orm import relationship, backref
+from sqlalchemy import Column, Integer, String, DateTime, Text
 from app.models import BaseModel, session
+from api import achieve
 
 
 class SubmitStatus:
@@ -49,36 +49,41 @@ def get_error_submits(account):
 
 
 def create_submit(data):
+    """ 新建提交数据 """
     cur_account = data['account']
     has = session.query(Submit)\
         .filter_by(run_id=data['run_id'], oj_name=cur_account.oj_name)\
         .first()
-    if not has:
-        new_submit = Submit()
-        new_submit.pro_id = data['pro_id']
-        new_submit.run_id = data['run_id']
-        new_submit.run_time = data['run_time']
-        new_submit.memory = data['memory']
-        new_submit.lang = data['lang']
-        new_submit.memory = data['memory']
-        new_submit.result = data['result']
-        new_submit.submitted_at = data['submit_time']
-        if data['code']:
-            new_submit.code = data['code']
-            new_submit.status = SubmitStatus.GOOD
-        else:
-            new_submit.status = SubmitStatus.BROKEN
-        new_submit.oj_name = cur_account.oj_name
-        if 'origin_oj' in data and data['origin_oj']:
-            new_submit.origin_oj = data['origin_oj']
-        new_submit.user_id = cur_account.user.id
-        new_submit.user_name = cur_account.user.display_name
-        new_submit.created_at = datetime.now()
-        new_submit.save()
-        return True
+    if has:
+        return False
+    new_submit = Submit()
+    new_submit.pro_id = data['pro_id']
+    new_submit.run_id = data['run_id']
+    new_submit.run_time = data['run_time']
+    new_submit.memory = data['memory']
+    new_submit.lang = data['lang']
+    new_submit.memory = data['memory']
+    new_submit.result = data['result']
+    new_submit.submitted_at = data['submit_time']
+    if 'code' in data and data['code']:
+        new_submit.code = data['code']
+        new_submit.status = SubmitStatus.GOOD
+    else:
+        new_submit.status = SubmitStatus.BROKEN
+    new_submit.oj_name = cur_account.oj_name
+    if 'origin_oj' in data and data['origin_oj']:
+        new_submit.origin_oj = data['origin_oj']
+    new_submit.user_id = cur_account.user.id
+    new_submit.user_name = cur_account.user.display_name
+    new_submit.created_at = datetime.now()
+    new_submit.save()
+    # 存入新提交的时候触发
+    achieve.trigger()
+    return True
 
 
 def update_code(data):
+    """ 更新补充缺漏的代码数据 """
     cur_account = data['account']
     has = session.query(Submit) \
         .filter_by(run_id=data['run_id'], oj_name=cur_account.oj_name) \

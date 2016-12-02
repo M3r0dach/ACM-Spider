@@ -22,3 +22,4 @@
 - [X] PKU OJ Spider
 - [X] HUST Virtual Judge Spider
 - [ ] BestCoder Spider
+- [ ] 成就触发器

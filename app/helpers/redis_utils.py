@@ -1,7 +1,6 @@
 import redis as py_redis
-from config.secret import redis_config, RedisKey
-
 from app.helpers.logger import logger
+from config.secret import redis_config, RedisKey
 from config.settings import SUPPORT_OJ
 
 redis = py_redis.StrictRedis(**redis_config)
@@ -12,9 +11,18 @@ def setup_redis():
         ret = redis.hmset(RedisKey.switch, {oj: 1 for oj in SUPPORT_OJ})
         if ret:
             logger.info('[redis] setup switch key success')
-    else:
-        log_spider_status()
+    log_spider_status()
 
+
+def log_spider_status():
+    logger.info('[OPEN Spider] {0}'.format(
+        get_all_open_spider()
+    ))
+
+
+###################################
+# redis 控制Spider开关
+###################################
 
 def get_all_open_spider():
     all_status = redis.hgetall(RedisKey.switch)
@@ -26,12 +34,6 @@ def get_all_open_spider():
 def is_spider_open(oj_name):
     status = int(redis.hget(RedisKey.switch, oj_name))
     return status == 1
-
-
-def log_spider_status():
-    logger.info('[OPEN Spider] {0}'.format(
-        get_all_open_spider()
-    ))
 
 
 def turn_on_spider(oj_name):

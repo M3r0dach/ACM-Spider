@@ -16,7 +16,6 @@ class CodeforcesSpider(Spider):
 
     def __init__(self):
         super(CodeforcesSpider, self).__init__()
-        self.account = None
 
     @gen.coroutine
     def get_solved(self):
@@ -37,7 +36,9 @@ class CodeforcesSpider(Spider):
             logger.error(e)
 
     @gen.coroutine
-    def get_code(self, contest_id, run_id):
+    def get_code(self, run_id, **kwargs):
+        pro_id = kwargs['pro_id']
+        contest_id = re.compile(r'^\d+').match(pro_id).group()
         url = self.code_prefix.format(contest_id, run_id)
         try:
             response = yield self.load_page(url)
@@ -85,28 +86,12 @@ class CodeforcesSpider(Spider):
         start, size = 1, 50
         while True:
             status_list = yield self.get_status(self.account.nickname, start, size)
+            if not status_list or len(status_list) == 0:
+                break
             logger.debug('{} {} Success to get {} new status'.format(
                 self.TAG, self.account, len(status_list)))
-            if not status_list or len(status_list) == 0:
-                return
             self.put_queue(status_list)
             start += size
-
-    @gen.coroutine
-    def fetch_code(self):
-        error_submits = submit.get_error_submits(self.account)
-        for run_id, pro_id, in error_submits:
-            contest_id = re.compile(r'^\d+').match(pro_id).group()
-            code = yield self.get_code(contest_id, run_id)
-            if not code:
-                yield gen.sleep(60 * 2)
-            else:
-                status = {
-                    'type': DataType.Code, 'account': self.account,
-                    'run_id': run_id, 'code': code
-                }
-                self.put_queue([status])
-                yield gen.sleep(30)
 
     @gen.coroutine
     def run(self):

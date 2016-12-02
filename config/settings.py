@@ -3,22 +3,23 @@ import os
 from config.secret import db_config
 
 # support oj
-SUPPORT_OJ = {
-    'hdu': 'Hdu',
-    'bnu': 'Bnu',
-    'vj': 'Vjudge',
-    'cf': 'Codeforces',
-    'poj': 'Poj',
-    # 'bc': 'Bestcoder'
-}
+SUPPORT_OJ = dict(
+    hdu='Hdu',
+    bnu='Bnu',
+    poj='Poj',
+    vj='Vjudge',
+    cf='Codeforces',
+    bc='Bestcoder'
+)
 
 # env
 app_env = os.environ.get('SPIDER_ENV') or 'development'
+app_port = os.environ.get('SPIDER_PORT') or 8000
 
 # directory
 base_dir = os.sep.join(os.path.realpath(__file__).split(os.sep)[:-2])
 log_dir = base_dir + '/log/{}.log'.format(app_env)
-log_level = logging.DEBUG
+log_level = logging.INFO
 
 # database
 db_config['db_name'] = db_config['db_name_prefix'].format(app_env)
@@ -34,5 +35,5 @@ WORKER_SIZE = 2
 DATA_POOL_SIZE = 128
 BATCH_SAVE_SIZE = 10
 
-# hours between account to update again
-FETCH_TIMEDELTA = 0
+# minutes between account to update again
+FETCH_TIMEDELTA = 60

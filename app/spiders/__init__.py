@@ -3,21 +3,23 @@ from tornado import gen, httpclient
 from tornado.queues import Queue
 from app.helpers.logger import logger
 from app.helpers.exceptions import LoadPageException
+from app.models import submit
 from config import settings
 
 USER_AGENT = 'Mozilla/5.0 (Windows NT 6.3; WOW64)AppleWebKit/537.36 (KHTML, like Gecko) ' \
              'Chrome/51.0.2704.103 Safari/537.36'
 
-
 # 数据缓存池
 DataPool = Queue(maxsize=settings.DATA_POOL_SIZE)
 
 
+# crawl data type
 class DataType:
     Submit = 0
     Code = 1
 
 
+# http methods
 class HttpMethod:
     GET = 'GET'
     POST = 'POST'
@@ -25,14 +27,19 @@ class HttpMethod:
     DELETE = 'DELETE'
 
 
+# 所有Spider的基类
 class Spider:
     TAG = '[BASE]'
 
     def __init__(self):
-        pass
+        self.account = None
 
     def __repr__(self):
         return '<{}Spider>'.format(self.TAG)
+
+    ########################
+    # 静态的工具方法
+    ########################
 
     @staticmethod
     def fetch(url, callback=None, raise_error=True, **kwargs):
@@ -67,8 +74,29 @@ class Spider:
             if 'account' in item:
                 yield DataPool.put(item)
 
-    @gen.coroutine
+    ########################
+    # 抽象方法
+    ########################
+
+    def get_code(self, run_id, **kwargs):
+        """ 留给子类实现具体逻辑 """
+        raise Exception('没有具体实现')
+
     def run(self):
-        raise Exception('Not Implemented!')
+        """ 留给子类实现具体逻辑 """
+        raise Exception('没有具体实现')
 
-
+    @gen.coroutine
+    def fetch_code(self):
+        error_submits = submit.get_error_submits(self.account)
+        for run_id, pro_id in error_submits:
+            code = yield self.get_code(run_id, pro_id=pro_id)
+            if not code:
+                yield gen.sleep(60 * 2)
+            else:
+                status = {
+                    'type': DataType.Code, 'account': self.account,
+                    'run_id': run_id, 'code': code
+                }
+                self.put_queue([status])
+                yield gen.sleep(30)

@@ -20,7 +20,6 @@ class HduSpider(Spider):
         super(HduSpider, self).__init__()
         self.cookie = None
         self.has_login = False
-        self.account = None
 
     @gen.coroutine
     def fetch_cookie(self):
@@ -104,7 +103,7 @@ class HduSpider(Spider):
 
     @try_run(3, duration=60)
     @gen.coroutine
-    def get_code(self, run_id):
+    def get_code(self, run_id, **kwargs):
         url = self.source_code_prefix.format(run_id)
         try:
             response = yield self.load_page(url, {'Cookie': self.cookie})
@@ -161,21 +160,6 @@ class HduSpider(Spider):
             logger.debug('{} {} Success to get {} new status'.format(self.TAG, self.account, len(status_list)))
             self.put_queue(status_list)
             first = int(status_list[-1]['run_id']) - 1
-
-    @gen.coroutine
-    def fetch_code(self):
-        error_submits = submit.get_error_submits(self.account)
-        for run_id, _ in error_submits:
-            code = yield self.get_code(run_id)
-            if not code:
-                yield gen.sleep(60 * 2)
-            else:
-                status = {
-                    'type': DataType.Code, 'account': self.account,
-                    'run_id': run_id, 'code': code
-                }
-                self.put_queue([status])
-                yield gen.sleep(30)
 
     @gen.coroutine
     def run(self):

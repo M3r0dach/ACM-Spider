@@ -10,6 +10,29 @@ from app.models import submit
 from app.spiders import Spider, HttpMethod, DataType
 
 
+def gen_status_params(nickname, start=0, size=50):
+    columns = 10
+    params = {
+        'sEcho': 1,
+        'iColumns': columns,
+        'iDisplayStart': start,
+        'iDisplayLength': size,
+        'sSearch': '',
+        'bRegex': 'false',
+        'iSortCol_0': 1,
+        'sSortDir_0': 'desc',
+        'iSortingCols': 1
+    }
+    for i in range(10):
+        idx = str(i)
+        params['mDataProp_' + idx] = i
+        params['sSearch_' + idx] = nickname if i == 0 else ''
+        params['bRegex_' + idx] = 'false'
+        params['bSearchable_' + idx] = 'true'
+        params['bSortable_' + idx] = 'false'
+    return params
+
+
 class BnuSpider(Spider):
     TAG = '[BNU]'
     domain = 'https://acm.bnu.edu.cn/v3'
@@ -22,7 +45,6 @@ class BnuSpider(Spider):
         super(BnuSpider, self).__init__()
         self.cookie = None
         self.has_login = False
-        self.account = None
 
     @try_run(3)
     @gen.coroutine
@@ -75,31 +97,8 @@ class BnuSpider(Spider):
             logger.error('{} get Solved/Submitted error {}: {}'.format(self.TAG, self.account, ex))
             raise ex
 
-    @staticmethod
-    def _gen_status_params(nickname, start=0, size=50):
-        columns = 10
-        params = {
-            'sEcho': 1,
-            'iColumns': columns,
-            'iDisplayStart': start,
-            'iDisplayLength': size,
-            'sSearch': '',
-            'bRegex': 'false',
-            'iSortCol_0': 1,
-            'sSortDir_0': 'desc',
-            'iSortingCols': 1
-        }
-        for i in range(10):
-            idx = str(i)
-            params['mDataProp_' + idx] = i
-            params['sSearch_' + idx] = nickname if i == 0 else ''
-            params['bRegex_' + idx] = 'false'
-            params['bSearchable_' + idx] = 'true'
-            params['bSortable_' + idx] = 'false'
-        return params
-
     @gen.coroutine
-    def get_code(self, run_id):
+    def get_code(self, run_id, **kwargs):
         url = self.code_prefix.format(run_id)
         try:
             response = yield self.load_page(url, {'cookie': self.cookie})
@@ -119,7 +118,7 @@ class BnuSpider(Spider):
         start, size = 0, 50
         while True:
             url = httputil.url_concat(self.status_url,
-                                      self._gen_status_params(self.account.nickname, start, size))
+                                      gen_status_params(self.account.nickname, start, size))
             response = yield self.fetch(url)
             res = json.loads(response.body.decode('utf-8'))
             status_data = res['aaData']
@@ -141,21 +140,6 @@ class BnuSpider(Spider):
                 self.TAG, self.account, len(status_list)))
             self.put_queue(status_list)
             start += size
-
-    @gen.coroutine
-    def fetch_code(self):
-        error_submits = submit.get_error_submits(self.account)
-        for run_id, _ in error_submits:
-            code = yield self.get_code(run_id)
-            if not code:
-                yield gen.sleep(60 * 2)
-            else:
-                status = {
-                    'type': DataType.Code, 'account': self.account,
-                    'run_id': run_id, 'code': code
-                }
-                self.put_queue([status])
-                yield gen.sleep(30)
 
     @gen.coroutine
     def run(self):

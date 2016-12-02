@@ -21,7 +21,6 @@ class PojSpider(Spider):
         super(PojSpider, self).__init__()
         self.cookie = None
         self.has_login = False
-        self.account = None
 
     @try_run(3)
     @gen.coroutine
@@ -102,7 +101,7 @@ class PojSpider(Spider):
 
     @try_run(3)
     @gen.coroutine
-    def get_code(self, run_id):
+    def get_code(self, run_id, **kwargs):
         url = self.source_code_prefix.format(run_id)
         try:
             response = yield self.load_page(url, {'cookie': self.cookie})
@@ -160,21 +159,6 @@ class PojSpider(Spider):
                 return
             self.put_queue(status_list)
             first = int(status_list[-1]['run_id'])
-
-    @gen.coroutine
-    def fetch_code(self):
-        error_submits = submit.get_error_submits(self.account)
-        for run_id, _ in error_submits:
-            code = yield self.get_code(run_id)
-            if not code:
-                yield gen.sleep(60 * 2)
-            else:
-                status = {
-                    'type': DataType.Code, 'account': self.account,
-                    'run_id': run_id, 'code': code
-                }
-                self.put_queue([status])
-                yield gen.sleep(30)
 
     @gen.coroutine
     def run(self):

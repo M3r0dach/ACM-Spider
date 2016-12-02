@@ -16,7 +16,6 @@ class BestcoderSpider(Spider):
         super(BestcoderSpider, self).__init__()
         self.cookie = None
         self.has_login = False
-        self.account = None
 
     @gen.coroutine
     def fetch_cookie(self):

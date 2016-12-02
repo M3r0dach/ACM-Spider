@@ -20,7 +20,6 @@ class VjudgeSpider(Spider):
         super(VjudgeSpider, self).__init__()
         self.cookie = None
         self.has_login = False
-        self.account = None
 
     @gen.coroutine
     def login(self):
@@ -53,7 +52,7 @@ class VjudgeSpider(Spider):
         return {'solved': solved, 'submitted': submitted}
 
     @gen.coroutine
-    def get_code(self, run_id):
+    def get_code(self, run_id, **kwargs):
         url = self.code_url_prefix.format(run_id)
         try:
             response = yield self.load_page(url, {'cookie': self.cookie})
@@ -91,21 +90,6 @@ class VjudgeSpider(Spider):
             logger.debug('{} {} Success to get {} new status'.format(self.TAG, self.account, len(submits_list)))
             self.put_queue(submits_list)
             max_id = status_data[-1][0] - 1
-
-    @gen.coroutine
-    def fetch_code(self):
-        error_submits = submit.get_error_submits(self.account)
-        for run_id, _ in error_submits:
-            code = yield self.get_code(run_id)
-            if not code:
-                yield gen.sleep(60 * 2)
-            else:
-                status = {
-                    'type': DataType.Code, 'account': self.account,
-                    'run_id': run_id, 'code': code
-                }
-                self.put_queue([status])
-                yield gen.sleep(30)
 
     @gen.coroutine
     def run(self):
