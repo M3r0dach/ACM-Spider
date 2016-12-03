@@ -1,4 +1,5 @@
 from bs4 import BeautifulSoup
+from functools import wraps
 from tornado import gen, httpclient
 from tornado.queues import Queue
 from app.helpers.logger import logger
@@ -73,6 +74,7 @@ class Spider:
         for item in item_list:
             if 'account' in item:
                 yield DataPool.put(item)
+
 
     ########################
     # 抽象方法

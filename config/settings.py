@@ -19,7 +19,7 @@ app_port = os.environ.get('SPIDER_PORT') or 8000
 # directory
 base_dir = os.sep.join(os.path.realpath(__file__).split(os.sep)[:-2])
 log_dir = base_dir + '/log/{}.log'.format(app_env)
-log_level = logging.INFO
+log_level = logging.DEBUG
 
 # database
 db_config['db_name'] = db_config['db_name_prefix'].format(app_env)
@@ -28,12 +28,11 @@ DB_SHOW_SQL = False
 
 # concurrency
 SPIDER_CACHE_SIZE = 5
-MAX_QUEUE_SIZE = 5
-WORKER_SIZE = 2
+ACCOUNT_QUEUE_SIZE = 5
+SPIDER_RUNNER_SIZE = 3
 
 # data
 DATA_POOL_SIZE = 128
-BATCH_SAVE_SIZE = 10
 
 # minutes between account to update again
 FETCH_TIMEDELTA = 60

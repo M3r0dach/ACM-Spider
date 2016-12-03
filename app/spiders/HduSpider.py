@@ -167,8 +167,11 @@ class HduSpider(Spider):
         yield self.login()
         if not self.has_login:
             raise LoginException('{} {} login error'.format(self.TAG, self.account))
-        general = yield self.get_solved()
-        if general and 'solved' in general:
-            self.account.set_general(general['solved'], general['submitted'])
-            self.account.save()
-        yield [self.get_submits(), self.fetch_code()]
+        if self.account.should_throttle:
+            yield self.fetch_code()
+        else:
+            general = yield self.get_solved()
+            if general and 'solved' in general:
+                self.account.set_general(general['solved'], general['submitted'])
+                self.account.save()
+            yield [self.get_submits(), self.fetch_code()]

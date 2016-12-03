@@ -95,8 +95,11 @@ class CodeforcesSpider(Spider):
 
     @gen.coroutine
     def run(self):
-        general = yield self.get_solved()
-        if general and 'rating' in general:
-            self.account.set_general(general['rating'], general['maxRating'])
-            self.account.save()
-        yield [self.get_submits(), self.fetch_code()]
+        if self.account.should_throttle:
+            yield self.fetch_code()
+        else:
+            general = yield self.get_solved()
+            if general and 'rating' in general:
+                self.account.set_general(general['rating'], general['maxRating'])
+                self.account.save()
+            yield [self.get_submits(), self.fetch_code()]

@@ -54,6 +54,11 @@ class Account(BaseModel):
             .filter_by(user_id=self.user_id, oj_name=self.oj_name) \
             .all()
 
+    @property
+    def should_throttle(self):
+        deadline = datetime.now() - timedelta(minutes=settings.FETCH_TIMEDELTA)
+        return self.updated_at >= deadline and self.status != AccountStatus.NOT_INIT
+
     def set_status(self, new_status):
         self.status = new_status
 
@@ -90,7 +95,6 @@ def get_available_account():
                                      AccountStatus.STOP,
                                      AccountStatus.UPDATING,
                                      AccountStatus.ACCOUNT_ERROR]))\
-        .filter(Account.updated_at < deadline)\
         .order_by(Account.updated_at.asc())\
         .with_for_update(nowait=True)\
         .first()

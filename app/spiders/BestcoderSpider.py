@@ -1,3 +1,4 @@
+import json
 from urllib import parse
 from tornado import gen
 from app.helpers.logger import logger
@@ -10,7 +11,7 @@ class BestcoderSpider(Spider):
     index_url = domain
     login_url = domain + '/login.php?action=login'
     user_url_prefix = domain + '/rating.php?user={0}'
-    rating_api_prefix = domain + '//api/api.php?type=user-rating&user={0}'
+    rating_api_prefix = domain + '/api/api.php?type=user-rating&user={0}'
 
     def __init__(self):
         super(BestcoderSpider, self).__init__()
@@ -25,7 +26,7 @@ class BestcoderSpider(Spider):
         if not response:
             return False
         self.cookie = response.headers['Set-Cookie']
-        self.cookie = self.cookie.split(';')[0] + '; username=Raychat;'
+        self.cookie = self.cookie.split(';')[0] + '; username={};'.format(self.account.nickname)
         logger.info('{} fetch cookie success'.format(self.TAG))
         return True
 
@@ -34,14 +35,11 @@ class BestcoderSpider(Spider):
         if self.has_login:
             return True
         post_body = parse.urlencode({
-            'username': 'Raychat',
-            'password': '63005610',
+            'username': self.account.nickname,
+            'password': self.account.password,
             'remember': 'on'
         })
-        headers = {
-            'Host': 'bestcoder.hdu.edu.cn',
-            'Cookie': self.cookie
-        }
+        headers = dict(Host='bestcoder.hdu.edu.cn', Cookie=self.cookie)
         response = yield self.fetch(self.login_url, method=HttpMethod.POST,
                                     headers=headers, body=post_body)
         code = response.code
@@ -54,24 +52,25 @@ class BestcoderSpider(Spider):
 
     @gen.coroutine
     def get_rating(self):
-        url = self.user_url_prefix.format('Raychat')
+        url = self.rating_api_prefix.format(self.account.nickname)
         try:
-            response = yield self.load_page(url, {'cookie': self.cookie})
+            response = yield self.fetch(url)
             if not response:
                 return False
-            soup = self.get_lxml_bs4(response.body)
-            profile_heading = soup.find('div', id='profile-heading')
-            if profile_heading:
-                ratings = profile_heading.find_all('span', class_='bigggger')
-                if len(ratings) == 2:
-                    return {'solved': ratings[1].text,
-                            'submitted': ratings[0].text}
+            res = json.loads(response.body.decode())
+            if len(res) > 0:
+                max_rating = max(res, key=lambda x: x['rating'])
+                return dict(rating=res[-1]['rating'],
+                            maxRating=max_rating['rating'])
         except Exception as ex:
             logger.error(ex)
             logger.error('{} {} get Rating error'.format(self.TAG, self.account))
 
     @gen.coroutine
     def run(self):
-        yield self.fetch_cookie()
-        yield self.login()
-        yield self.get_rating()
+        if self.account.should_throttle:
+            return
+        general = yield self.get_rating()
+        if general and 'rating' in general:
+            self.account.set_general(general['rating'], general['maxRating'])
+            self.account.save()

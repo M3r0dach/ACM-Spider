@@ -23,3 +23,8 @@ class SpiderRunnerHandler(web.RequestHandler):
         else:
             redis_utils.turn_off_spider(oj_name)
             self.write({'error': 0})
+
+
+class AccountQueueHandler(web.RequestHandler):
+    def get(self, *args, **kwargs):
+        pass

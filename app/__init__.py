@@ -13,7 +13,7 @@ from config import settings
 
 
 # Account 生产消费队列
-AccountQueue = Queue(maxsize=settings.MAX_QUEUE_SIZE)
+AccountQueue = Queue(maxsize=settings.ACCOUNT_QUEUE_SIZE)
 
 # SpiderRunner 缓存池
 SpiderFactory = {
@@ -49,7 +49,7 @@ def account_producer():
 @gen.coroutine
 def spider_runner(idx):
     """ 爬虫运行地 """
-    logger.info('[SpiderRunner #{0}] 开始运行'.format(idx))
+    logger.info('[SpiderRunner #{0}] 开始运行 ...'.format(idx))
     while True:
         cur_account = yield AccountQueue.get()
         logger.info('[SpiderRunner #{0}] {1} <=== account_queue(size={2})'
@@ -85,7 +85,7 @@ def spider_runner(idx):
 @gen.coroutine
 def data_pool_consumer():
     """ 爬取的数据消费协程 """
-    logger.info('[DataPoolConsumer] 数据消费协程开启 ')
+    logger.info('[DataPoolConsumer] 数据消费协程开启 ... ')
     while True:
         while DataPool.empty():
             yield gen.sleep(10)
@@ -109,7 +109,7 @@ def data_pool_consumer():
 
 @gen.coroutine
 def spider_main():
-    yield [spider_runner(i) for i in range(settings.WORKER_SIZE)]
+    yield [spider_runner(i) for i in range(settings.SPIDER_RUNNER_SIZE)]
 
 
 def make_spider_app(loop):

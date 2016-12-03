@@ -21,5 +21,5 @@
 - [X] Codeforces Spider
 - [X] PKU OJ Spider
 - [X] HUST Virtual Judge Spider
-- [ ] BestCoder Spider
+- [X] BestCoder Spider
 - [ ] 成就触发器
