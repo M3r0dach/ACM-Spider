@@ -13,8 +13,8 @@ SUPPORT_OJ = dict(
 )
 
 # env
-app_env = os.environ.get('SPIDER_ENV') or 'development'
-app_port = os.environ.get('SPIDER_PORT') or 8000
+app_env = os.environ.get('ACM_SPIDER_ENV') or 'development'
+app_port = os.environ.get('ACM_SPIDER_PORT') or 8000
 
 # directory
 base_dir = os.sep.join(os.path.realpath(__file__).split(os.sep)[:-2])
@@ -35,4 +35,4 @@ SPIDER_RUNNER_SIZE = 3
 DATA_POOL_SIZE = 128
 
 # minutes between account to update again
-FETCH_TIMEDELTA = 60
+FETCH_TIMEDELTA = 0 if app_env == 'development' else 60

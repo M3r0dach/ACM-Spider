@@ -1,13 +1,15 @@
-import time
 import base64
+import time
 from datetime import datetime, timedelta
-from sqlalchemy import Column, Integer, String, DateTime, or_
+
+from sqlalchemy import Column, Integer, String, DateTime
+
 from app.helpers.logger import logger
 from app.helpers.redis_utils import get_all_open_spider
-from app.models import BaseModel, session
-from app.models.user import User
-from app.models.submit import Submit
 from config import settings
+from models import BaseModel, session
+from models.submit import Submit
+from models.user import User
 
 
 class AccountStatus:

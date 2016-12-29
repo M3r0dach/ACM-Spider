@@ -1,20 +1,26 @@
-import sys
+import re
 import json
+import traceback
+from zipfile import ZipFile
+from io import BytesIO
 from datetime import datetime
 from urllib import parse
+
 from tornado import gen
-from app.helpers.logger import logger
+from config.settings import base_dir
 from app.helpers.exceptions import LoginException
+from app.helpers.logger import logger
 from app.spiders import Spider, HttpMethod, DataType
-from app.models import submit
+from models import submit
 
 
 class VjudgeSpider(Spider):
     TAG = '[Virtual Judge]'
-    domain = 'http://vjudge.net'
+    domain = 'https://vjudge.net'
     login_url = domain + '/user/login'
     status_url = domain + '/user/submissions?username={}&pageSize={}&maxId={}'
     code_url_prefix = domain + '/problem/source/{0}'
+    code_zip_url = domain + '/user/exportSource?minRunId={0}&maxRunId={1}&ac=false'
 
     def __init__(self):
         super(VjudgeSpider, self).__init__()
@@ -31,8 +37,8 @@ class VjudgeSpider(Spider):
         })
         headers = dict(Host='vjudge.net', Origin=self.domain,
                        Referer='http://vjudge.net/index')
-        response = yield self.fetch(self.login_url, method=HttpMethod.POST,
-                                    body=post_body, headers=headers)
+        response = yield self.fetch(self.login_url, method=HttpMethod.POST, body=post_body,
+                                    headers=headers, validate_cert=False)
         code = response.code
         res = response.body.decode()
         if code != 200 and code != 302 or res != 'success':
@@ -52,15 +58,39 @@ class VjudgeSpider(Spider):
         return {'solved': solved, 'submitted': submitted}
 
     @gen.coroutine
+    def get_code_zip(self, min, max):
+        url = self.code_zip_url.format(min, max)
+        try:
+            response = yield self.fetch(url, method=HttpMethod.GET,
+                                        headers={'cookie': self.cookie},
+                                        validate_cert=False)
+            buffer = response.buffer
+            with ZipFile(buffer) as code_zip:
+                for name in code_zip.namelist():
+                    run_id = re.split(r'/|_', name)[2]
+                    with code_zip.open(name) as code_fp:
+                        code = code_fp.read()
+                    status = {
+                        'type': DataType.Code, 'account': self.account,
+                        'run_id': run_id, 'code': code
+                    }
+                    self.put_queue([status])
+        except Exception as e:
+            logger.error(e)
+            logger.error(traceback.format_exc())
+
+    @gen.coroutine
     def get_code(self, run_id, **kwargs):
         url = self.code_url_prefix.format(run_id)
         try:
-            response = yield self.load_page(url, {'cookie': self.cookie})
+            response = yield self.load_page(url, {'cookie': self.cookie},
+                                            validate_cert=False)
             soup = self.get_lxml_bs4(response.body)
             code = soup.find('pre', class_='sh-c').text
             return code
         except Exception as e:
             logger.error(e)
+            logger.error(traceback.format_exc())
 
     @gen.coroutine
     def get_submits(self):
@@ -68,7 +98,8 @@ class VjudgeSpider(Spider):
         while True:
             url = self.status_url.format(self.account.nickname, page_size, max_id)
             response = yield self.fetch(url, method=HttpMethod.GET,
-                                        headers=dict(Cookie=self.cookie))
+                                        headers=dict(Cookie=self.cookie),
+                                        validate_cert=False)
             res = json.loads(response.body.decode('utf-8'))
             if 'error' in res:
                 yield gen.sleep(60)
@@ -90,6 +121,15 @@ class VjudgeSpider(Spider):
             logger.debug('{} {} Success to get {} new status'.format(self.TAG, self.account, len(submits_list)))
             self.put_queue(submits_list)
             max_id = status_data[-1][0] - 1
+
+    @gen.coroutine
+    def fetch_code(self):
+        error_submits = submit.get_error_submits(self.account)
+        run_ids = list(map(lambda s: int(s[0]), error_submits))
+        if not run_ids:
+            return
+        min_run_id, max_run_id = min(run_ids), max(run_ids)
+        yield self.get_code_zip(min_run_id, max_run_id)
 
     @gen.coroutine
     def run(self):

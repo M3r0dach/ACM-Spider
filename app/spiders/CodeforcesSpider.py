@@ -1,10 +1,12 @@
-import re
 import json
+import re
 from datetime import datetime
+
 from tornado import gen
+
 from app.helpers.logger import logger
 from app.spiders import Spider, DataType
-from app.models import submit
+from models import submit
 
 
 class CodeforcesSpider(Spider):

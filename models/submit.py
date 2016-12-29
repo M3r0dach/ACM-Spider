@@ -1,7 +1,9 @@
 from datetime import datetime
+
 from sqlalchemy import Column, Integer, String, DateTime, Text
-from app.models import BaseModel, session
+
 from api import achieve
+from models import BaseModel, session
 
 
 class SubmitStatus:

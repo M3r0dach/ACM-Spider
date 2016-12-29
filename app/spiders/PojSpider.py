@@ -1,11 +1,13 @@
 import re
 from urllib import parse
+
 from tornado import gen
+
+from app.helpers.decorators import try_run
 from app.helpers.exceptions import LoginException
 from app.helpers.logger import logger
-from app.helpers.decorators import try_run
 from app.spiders import Spider, HttpMethod, DataType
-from app.models import submit
+from models import submit
 
 
 class PojSpider(Spider):

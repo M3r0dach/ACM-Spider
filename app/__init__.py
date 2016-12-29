@@ -1,16 +1,17 @@
 import sys
 import traceback
+
 from tornado import gen
 from tornado.queues import Queue
+
+from app.helpers.exceptions import LoginException
 from app.helpers.logger import logger
 from app.helpers.redis_utils import is_spider_open
-from app.helpers.exceptions import LoginException
-from app.models import account, submit
 from app.spiders import DataPool, DataType
 from app.spiders import HduSpider, BnuSpider, VjudgeSpider, CodeforcesSpider
 from app.spiders import PojSpider, BestcoderSpider
 from config import settings
-
+from models import account, submit
 
 # Account 生产消费队列
 AccountQueue = Queue(maxsize=settings.ACCOUNT_QUEUE_SIZE)
