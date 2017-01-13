@@ -43,6 +43,14 @@ class Spider:
     ########################
 
     @staticmethod
+    def init_http_client():
+        try:
+            httpclient.AsyncHTTPClient.configure("tornado.curl_httpclient.CurlAsyncHTTPClient")
+            logger.info('[ACM-Spider] 配置 CurlAsyncHTTPClient 成功')
+        except Exception as ex:
+            logger.error('[ACM-Spider] 配置 CurlAsyncHTTPClient 失败: {}'.format(ex))
+
+    @staticmethod
     def fetch(url, callback=None, raise_error=True, **kwargs):
         http_client = httpclient.AsyncHTTPClient()
         return http_client.fetch(url, callback=callback, raise_error=raise_error,
@@ -57,11 +65,10 @@ class Spider:
         return BeautifulSoup(markup, 'lxml')
 
     @staticmethod
-    @gen.coroutine
-    def load_page(url, headers=None, **kwargs):
+    async def load_page(url, headers=None, **kwargs):
         response = None
         try:
-            response = yield Spider.fetch(url, headers=headers, **kwargs)
+            response = await Spider.fetch(url, headers=headers, **kwargs)
         except httpclient.HTTPError as ex:
             logger.error('加载 {} 失败: {}'.format(url, ex))
             raise LoadPageException('加载 {} 失败: {}'.format(url, ex))
@@ -69,11 +76,10 @@ class Spider:
             return response
 
     @staticmethod
-    @gen.coroutine
-    def put_queue(item_list):
+    async def put_queue(item_list):
         for item in item_list:
             if 'account' in item:
-                yield DataPool.put(item)
+                await DataPool.put(item)
 
 
     ########################
@@ -88,17 +94,16 @@ class Spider:
         """ 留给子类实现具体逻辑 """
         raise Exception('没有具体实现')
 
-    @gen.coroutine
-    def fetch_code(self):
+    async def fetch_code(self):
         error_submits = submit.get_error_submits(self.account)
         for run_id, pro_id in error_submits:
-            code = yield self.get_code(run_id, pro_id=pro_id)
+            code = await self.get_code(run_id, pro_id=pro_id)
             if not code:
-                yield gen.sleep(60 * 2)
+                await gen.sleep(60 * 2)
             else:
                 status = {
                     'type': DataType.Code, 'account': self.account,
                     'run_id': run_id, 'code': code
                 }
-                self.put_queue([status])
-                yield gen.sleep(30)
+                await self.put_queue([status])
+                await gen.sleep(30)

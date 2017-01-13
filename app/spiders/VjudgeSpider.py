@@ -2,12 +2,10 @@ import re
 import json
 import traceback
 from zipfile import ZipFile
-from io import BytesIO
 from datetime import datetime
 from urllib import parse
 
 from tornado import gen
-from config.settings import base_dir
 from app.helpers.exceptions import LoginException
 from app.helpers.logger import logger
 from app.spiders import Spider, HttpMethod, DataType
@@ -27,8 +25,7 @@ class VjudgeSpider(Spider):
         self.cookie = None
         self.has_login = False
 
-    @gen.coroutine
-    def login(self):
+    async def login(self):
         if self.has_login:
             return True
         post_body = parse.urlencode({
@@ -37,7 +34,7 @@ class VjudgeSpider(Spider):
         })
         headers = dict(Host='vjudge.net', Origin=self.domain,
                        Referer='http://vjudge.net/index')
-        response = yield self.fetch(self.login_url, method=HttpMethod.POST, body=post_body,
+        response = await self.fetch(self.login_url, method=HttpMethod.POST, body=post_body,
                                     headers=headers, validate_cert=False)
         code = response.code
         res = response.body.decode()
@@ -57,11 +54,10 @@ class VjudgeSpider(Spider):
         submitted = len(submitted_submits)
         return {'solved': solved, 'submitted': submitted}
 
-    @gen.coroutine
-    def get_code_zip(self, min, max):
+    async def get_code_zip(self, min, max):
         url = self.code_zip_url.format(min, max)
         try:
-            response = yield self.fetch(url, method=HttpMethod.GET,
+            response = await self.fetch(url, method=HttpMethod.GET,
                                         headers={'cookie': self.cookie},
                                         validate_cert=False)
             buffer = response.buffer
@@ -79,11 +75,10 @@ class VjudgeSpider(Spider):
             logger.error(e)
             logger.error(traceback.format_exc())
 
-    @gen.coroutine
-    def get_code(self, run_id, **kwargs):
+    async def get_code(self, run_id, **kwargs):
         url = self.code_url_prefix.format(run_id)
         try:
-            response = yield self.load_page(url, {'cookie': self.cookie},
+            response = await self.load_page(url, {'cookie': self.cookie},
                                             validate_cert=False)
             soup = self.get_lxml_bs4(response.body)
             code = soup.find('pre', class_='sh-c').text
@@ -92,17 +87,16 @@ class VjudgeSpider(Spider):
             logger.error(e)
             logger.error(traceback.format_exc())
 
-    @gen.coroutine
-    def get_submits(self):
+    async def get_submits(self):
         page_size, max_id = 500, 2 ** 31 - 1
         while True:
             url = self.status_url.format(self.account.nickname, page_size, max_id)
-            response = yield self.fetch(url, method=HttpMethod.GET,
+            response = await self.fetch(url, method=HttpMethod.GET,
                                         headers=dict(Cookie=self.cookie),
                                         validate_cert=False)
             res = json.loads(response.body.decode('utf-8'))
             if 'error' in res:
-                yield gen.sleep(60)
+                await gen.sleep(60)
                 continue
             status_data = res['data']
             if len(status_data) == 0:
@@ -119,28 +113,26 @@ class VjudgeSpider(Spider):
                 }
                 submits_list.append(status)
             logger.debug('{} {} Success to get {} new status'.format(self.TAG, self.account, len(submits_list)))
-            self.put_queue(submits_list)
+            await self.put_queue(submits_list)
             max_id = status_data[-1][0] - 1
 
-    @gen.coroutine
-    def fetch_code(self):
+    async def fetch_code(self):
         error_submits = submit.get_error_submits(self.account)
         run_ids = list(map(lambda s: int(s[0]), error_submits))
         if not run_ids:
             return
         min_run_id, max_run_id = min(run_ids), max(run_ids)
-        yield self.get_code_zip(min_run_id, max_run_id)
+        await self.get_code_zip(min_run_id, max_run_id)
 
-    @gen.coroutine
-    def run(self):
-        yield self.login()
+    async def run(self):
+        await self.login()
         if not self.has_login:
             raise LoginException('{} login error {}'.format(self.TAG, self.account))
         if not self.account.should_throttle:
-            yield self.get_submits()
+            await self.get_submits()
             general = self.get_solved()
             if general and 'solved' in general:
                 self.account.set_general(general['solved'], general['submitted'])
                 self.account.save()
-        yield self.fetch_code()
+        await self.fetch_code()
 

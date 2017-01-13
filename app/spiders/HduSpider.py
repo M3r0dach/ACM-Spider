@@ -23,11 +23,10 @@ class HduSpider(Spider):
         self.cookie = None
         self.has_login = False
 
-    @gen.coroutine
-    def fetch_cookie(self):
+    async def fetch_cookie(self):
         if self.cookie:
             return True
-        response = yield self.load_page(self.index_url)
+        response = await self.load_page(self.index_url)
         if not response:
             return False
         self.cookie = response.headers['Set-Cookie']
@@ -60,8 +59,7 @@ class HduSpider(Spider):
                 ret.append(pid)
         return ret
 
-    @gen.coroutine
-    def login(self):
+    async def login(self):
         if self.has_login:
             return True
         post_body = parse.urlencode({
@@ -69,7 +67,7 @@ class HduSpider(Spider):
             'userpass': self.account.password,
             'login': 'Sign In'
         })
-        response = yield self.fetch(self.login_url, method=HttpMethod.POST,
+        response = await self.fetch(self.login_url, method=HttpMethod.POST,
                                     headers={'Cookie': self.cookie}, body=post_body)
         code = response.code
         page = response.body.decode('gb2312')
@@ -79,11 +77,10 @@ class HduSpider(Spider):
         self.has_login = True
         return True
 
-    @gen.coroutine
-    def get_solved(self):
+    async def get_solved(self):
         url = self.user_url_prefix.format(self.account.nickname)
         try:
-            response = yield self.load_page(url, {'Cookie': self.cookie})
+            response = await self.load_page(url, {'Cookie': self.cookie})
             if not response:
                 return False
             soup = self.get_lxml_bs4(response.body)
@@ -104,11 +101,10 @@ class HduSpider(Spider):
             raise ex
 
     @try_run(3, duration=60)
-    @gen.coroutine
-    def get_code(self, run_id, **kwargs):
+    async def get_code(self, run_id, **kwargs):
         url = self.source_code_prefix.format(run_id)
         try:
-            response = yield self.load_page(url, {'Cookie': self.cookie})
+            response = await self.load_page(url, {'Cookie': self.cookie})
             if not response:
                 return False
             soup = self.get_lxml_bs4(response.body)
@@ -124,12 +120,11 @@ class HduSpider(Spider):
             logger.error(ex)
             logger.error('{} fetch {}\'s {} code error'.format(self.TAG, self.account, run_id))
 
-    @gen.coroutine
-    def fetch_status(self, first):
+    async def fetch_status(self, first):
         url = self.status_prefix.format(self.account.nickname, first)
         status_list = []
         try:
-            response = yield self.load_page(url, {'Cookie': self.cookie})
+            response = await self.load_page(url, {'Cookie': self.cookie})
             if not response:
                 return False
             soup = self.get_lxml_bs4(response.body)
@@ -152,28 +147,26 @@ class HduSpider(Spider):
             logger.error(ex)
             logger.error('{} fetch status account: {} first: {}'.format(self.TAG, self.account, first))
 
-    @gen.coroutine
-    def get_submits(self):
+    async def get_submits(self):
         first = ''
         while True:
-            status_list = yield self.fetch_status(first)
+            status_list = await self.fetch_status(first)
             if not status_list or len(status_list) == 0:
                 break
             logger.debug('{} {} Success to get {} new status'.format(self.TAG, self.account, len(status_list)))
-            self.put_queue(status_list)
+            await self.put_queue(status_list)
             first = int(status_list[-1]['run_id']) - 1
 
-    @gen.coroutine
-    def run(self):
-        yield self.fetch_cookie()
-        yield self.login()
+    async def run(self):
+        await self.fetch_cookie()
+        await self.login()
         if not self.has_login:
             raise LoginException('{} {} login error'.format(self.TAG, self.account))
         if self.account.should_throttle:
-            yield self.fetch_code()
+            await self.fetch_code()
         else:
-            general = yield self.get_solved()
+            general = await self.get_solved()
             if general and 'solved' in general:
                 self.account.set_general(general['solved'], general['submitted'])
                 self.account.save()
-            yield [self.get_submits(), self.fetch_code()]
+            await gen.multi([self.get_submits(), self.fetch_code()])

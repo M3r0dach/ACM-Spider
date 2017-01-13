@@ -3,7 +3,7 @@ from app.helpers import redis_utils
 from config.settings import SUPPORT_OJ
 
 
-class SpiderRunnerHandler(web.RequestHandler):
+class SpiderWorkerHandler(web.RequestHandler):
     def get(self, *args, **kwargs):
         open_spiders = redis_utils.get_all_open_spider()
         self.write({'error': 0, 'items': open_spiders})

@@ -19,11 +19,10 @@ class CodeforcesSpider(Spider):
     def __init__(self):
         super(CodeforcesSpider, self).__init__()
 
-    @gen.coroutine
-    def get_solved(self):
+    async def get_solved(self):
         url = self.user_info_prefix.format(self.account.nickname)
         try:
-            response = yield self.load_page(url)
+            response = await self.load_page(url)
             if not response:
                 return False
             ret = json.loads(response.body.decode())
@@ -37,13 +36,12 @@ class CodeforcesSpider(Spider):
         except Exception as e:
             logger.error(e)
 
-    @gen.coroutine
-    def get_code(self, run_id, **kwargs):
+    async def get_code(self, run_id, **kwargs):
         pro_id = kwargs['pro_id']
         contest_id = re.compile(r'^\d+').match(pro_id).group()
         url = self.code_prefix.format(contest_id, run_id)
         try:
-            response = yield self.load_page(url)
+            response = await self.load_page(url)
             if not response:
                 return None
             soup = self.get_lxml_bs4(response.body)
@@ -52,12 +50,11 @@ class CodeforcesSpider(Spider):
         except Exception as e:
             logger.error(e)
 
-    @gen.coroutine
-    def get_status(self, handle, start=1, length=50):
+    async def get_status(self, handle, start=1, length=50):
         is_gym = lambda cid: len(str(cid)) >= 6
         url = self.status_prefix.format(handle, start, length)
         try:
-            response = yield self.load_page(url)
+            response = await self.load_page(url)
             if not response:
                 return False
             response_data = json.loads(response.body.decode())
@@ -83,11 +80,10 @@ class CodeforcesSpider(Spider):
         except Exception as e:
             logger.error(e)
 
-    @gen.coroutine
-    def get_submits(self):
+    async def get_submits(self):
         start, size = 1, 50
         while True:
-            status_list = yield self.get_status(self.account.nickname, start, size)
+            status_list = await self.get_status(self.account.nickname, start, size)
             if not status_list or len(status_list) == 0:
                 break
             logger.debug('{} {} Success to get {} new status'.format(
@@ -95,13 +91,12 @@ class CodeforcesSpider(Spider):
             self.put_queue(status_list)
             start += size
 
-    @gen.coroutine
-    def run(self):
+    async def run(self):
         if self.account.should_throttle:
-            yield self.fetch_code()
+            await self.fetch_code()
         else:
-            general = yield self.get_solved()
+            general = await self.get_solved()
             if general and 'rating' in general:
                 self.account.set_general(general['rating'], general['maxRating'])
                 self.account.save()
-            yield [self.get_submits(), self.fetch_code()]
+            await gen.multi([self.get_submits(), self.fetch_code()])

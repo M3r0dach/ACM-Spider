@@ -48,8 +48,7 @@ class BnuSpider(Spider):
         self.has_login = False
 
     @try_run(3)
-    @gen.coroutine
-    def login(self):
+    async def login(self):
         if self.has_login:
             return True
         post_body = parse.urlencode({
@@ -58,7 +57,7 @@ class BnuSpider(Spider):
             'cksave': 1,
             'login': 'Login'
         })
-        response = yield self.fetch(self.login_url, method=HttpMethod.POST,
+        response = await self.fetch(self.login_url, method=HttpMethod.POST,
                                     body=post_body)
         code = response.code
         res = json.loads(response.body.decode('utf-8'))
@@ -80,11 +79,10 @@ class BnuSpider(Spider):
             solved_list.append(a.text)
         return solved_list
 
-    @gen.coroutine
-    def get_solved(self):
+    async def get_solved(self):
         url = self.user_url_prefix.format(self.account.nickname)
         try:
-            response = yield self.load_page(url, {'cookie': self.cookie})
+            response = await self.load_page(url, {'cookie': self.cookie})
             if not response:
                 return False
             soup = self.get_lxml_bs4(response.body)
@@ -98,11 +96,10 @@ class BnuSpider(Spider):
             logger.error('{} get Solved/Submitted error {}: {}'.format(self.TAG, self.account, ex))
             raise ex
 
-    @gen.coroutine
-    def get_code(self, run_id, **kwargs):
+    async def get_code(self, run_id, **kwargs):
         url = self.code_prefix.format(run_id)
         try:
-            response = yield self.load_page(url, {'cookie': self.cookie})
+            response = await self.load_page(url, {'cookie': self.cookie})
             if not response:
                 logger.error('{} {} Fail to load code {} page'.format(self.TAG, self.account, run_id))
                 logger.error('{}: response => {}'.format(self.TAG, response))
@@ -114,13 +111,12 @@ class BnuSpider(Spider):
         except Exception as ex:
             logger.error('{} fetch {}\'s {} code error {}'.format(self.TAG, self.account, run_id, ex))
 
-    @gen.coroutine
-    def get_submits(self):
+    async def get_submits(self):
         start, size = 0, 50
         while True:
             url = httputil.url_concat(self.status_url,
                                       gen_status_params(self.account.nickname, start, size))
-            response = yield self.fetch(url)
+            response = await self.fetch(url)
             res = json.loads(response.body.decode('utf-8'))
             status_data = res['aaData']
             if len(status_data) == 0:
@@ -142,16 +138,15 @@ class BnuSpider(Spider):
             self.put_queue(status_list)
             start += size
 
-    @gen.coroutine
-    def run(self):
-        yield self.login()
+    async def run(self):
+        await self.login()
         if not self.has_login:
             raise LoginException('{} login error {}'.format(self.TAG, self.account))
         if self.account.should_throttle:
-            yield self.fetch_code()
+            await self.fetch_code()
         else:
-            general = yield self.get_solved()
+            general = await self.get_solved()
             if general and 'solved' in general:
                 self.account.set_general(general['solved'], general['submitted'])
                 self.account.save()
-            yield [self.get_submits(), self.fetch_code()]
+            await gen.multi([self.get_submits(), self.fetch_code()])

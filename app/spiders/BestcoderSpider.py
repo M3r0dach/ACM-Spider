@@ -1,6 +1,5 @@
 import json
 from urllib import parse
-from tornado import gen
 from app.helpers.logger import logger
 from app.spiders import Spider, HttpMethod
 
@@ -18,11 +17,10 @@ class BestcoderSpider(Spider):
         self.cookie = None
         self.has_login = False
 
-    @gen.coroutine
-    def fetch_cookie(self):
+    async def fetch_cookie(self):
         if self.cookie:
             return True
-        response = yield self.load_page(self.index_url)
+        response = await self.load_page(self.index_url)
         if not response:
             return False
         self.cookie = response.headers['Set-Cookie']
@@ -30,8 +28,7 @@ class BestcoderSpider(Spider):
         logger.info('{} fetch cookie success'.format(self.TAG))
         return True
 
-    @gen.coroutine
-    def login(self):
+    async def login(self):
         if self.has_login:
             return True
         post_body = parse.urlencode({
@@ -40,7 +37,7 @@ class BestcoderSpider(Spider):
             'remember': 'on'
         })
         headers = dict(Host='bestcoder.hdu.edu.cn', Cookie=self.cookie)
-        response = yield self.fetch(self.login_url, method=HttpMethod.POST,
+        response = await self.fetch(self.login_url, method=HttpMethod.POST,
                                     headers=headers, body=post_body)
         code = response.code
         page = response.body.decode('gb2312')
@@ -50,11 +47,10 @@ class BestcoderSpider(Spider):
         logger.info('{} login success {}'.format(self.TAG, self.account))
         return True
 
-    @gen.coroutine
-    def get_rating(self):
+    async def get_rating(self):
         url = self.rating_api_prefix.format(self.account.nickname)
         try:
-            response = yield self.fetch(url)
+            response = await self.fetch(url)
             if not response:
                 return False
             res = json.loads(response.body.decode())
@@ -66,11 +62,10 @@ class BestcoderSpider(Spider):
             logger.error(ex)
             logger.error('{} {} get Rating error'.format(self.TAG, self.account))
 
-    @gen.coroutine
-    def run(self):
+    async def run(self):
         if self.account.should_throttle:
             return
-        general = yield self.get_rating()
+        general = await self.get_rating()
         if general and 'rating' in general:
             self.account.set_general(general['rating'], general['maxRating'])
             self.account.save()
