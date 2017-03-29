@@ -5,8 +5,8 @@ from tornado import gen
 from app.helpers.decorators import try_run
 from app.helpers.exceptions import LoginException
 from app.helpers.logger import logger
+from app.models import submit
 from app.spiders import Spider, HttpMethod, DataType
-from models import submit
 
 
 class HduSpider(Spider):
@@ -167,6 +167,5 @@ class HduSpider(Spider):
         else:
             general = await self.get_solved()
             if general and 'solved' in general:
-                self.account.set_general(general['solved'], general['submitted'])
-                self.account.save()
+                await self.account.set_general(general['solved'], general['submitted'])
             await gen.multi([self.get_submits(), self.fetch_code()])

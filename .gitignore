@@ -4,4 +4,4 @@
 /__pycache__
 *.pyc
 *.log
-secret.py
+config/secret.py

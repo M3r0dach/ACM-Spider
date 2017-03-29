@@ -1,9 +1,10 @@
+import json
 from datetime import datetime
 
 from sqlalchemy import Column, Integer, String, DateTime, Text
 
-from api import achieve
-from models import BaseModel, session
+from app.api import achieve
+from app.models import BaseModel, session
 
 
 class SubmitStatus:
@@ -20,7 +21,7 @@ class Submit(BaseModel):
     run_time = Column(Integer)
     memory = Column(Integer)
     lang = Column(String(32))
-    result = Column(String(32))
+    result = Column(String(64))
     code = Column(Text)
     submitted_at = Column(DateTime)
     status = Column(Integer)
@@ -80,7 +81,7 @@ def create_submit(data):
     new_submit.created_at = datetime.now()
     new_submit.save()
     # 存入新提交的时候触发
-    achieve.trigger()
+    achieve.trigger(new_submit.id)
     return True
 
 

@@ -1,10 +1,10 @@
 from tornado import ioloop
+
 from app import make_spider_app
+from app.api import make_api_app
 from app.helpers.logger import setup_logger, logger
 from app.helpers.redis_utils import setup_redis
 from config import settings
-from api import make_api_app
-
 
 if __name__ == '__main__':
     setup_logger(settings.log_level, settings.log_dir)

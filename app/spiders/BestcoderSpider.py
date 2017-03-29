@@ -1,5 +1,6 @@
 import json
 from urllib import parse
+
 from app.helpers.logger import logger
 from app.spiders import Spider, HttpMethod
 
@@ -67,5 +68,4 @@ class BestcoderSpider(Spider):
             return
         general = await self.get_rating()
         if general and 'rating' in general:
-            self.account.set_general(general['rating'], general['maxRating'])
-            self.account.save()
+            await self.account.set_general(general['rating'], general['maxRating'])

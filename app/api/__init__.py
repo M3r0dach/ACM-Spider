@@ -1,5 +1,6 @@
 from tornado import web
-from api.handlers import SpiderWorkerHandler
+
+from app.api.handlers import SpiderWorkerHandler
 
 
 def make_api_app():

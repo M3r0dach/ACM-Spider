@@ -7,8 +7,8 @@ from tornado import gen, httputil
 from app.helpers.decorators import try_run
 from app.helpers.exceptions import LoginException
 from app.helpers.logger import logger
+from app.models import submit
 from app.spiders import Spider, HttpMethod, DataType
-from models import submit
 
 
 def gen_status_params(nickname, start=0, size=50):
@@ -135,7 +135,7 @@ class BnuSpider(Spider):
                 status_list.append(status)
             logger.debug('{} {} Success to get {} new status'.format(
                 self.TAG, self.account, len(status_list)))
-            self.put_queue(status_list)
+            await self.put_queue(status_list)
             start += size
 
     async def run(self):
@@ -147,6 +147,5 @@ class BnuSpider(Spider):
         else:
             general = await self.get_solved()
             if general and 'solved' in general:
-                self.account.set_general(general['solved'], general['submitted'])
-                self.account.save()
+                await self.account.set_general(general['solved'], general['submitted'])
             await gen.multi([self.get_submits(), self.fetch_code()])

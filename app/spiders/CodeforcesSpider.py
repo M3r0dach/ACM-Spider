@@ -5,8 +5,8 @@ from datetime import datetime
 from tornado import gen
 
 from app.helpers.logger import logger
+from app.models import submit
 from app.spiders import Spider, DataType
-from models import submit
 
 
 class CodeforcesSpider(Spider):
@@ -88,7 +88,7 @@ class CodeforcesSpider(Spider):
                 break
             logger.debug('{} {} Success to get {} new status'.format(
                 self.TAG, self.account, len(status_list)))
-            self.put_queue(status_list)
+            await self.put_queue(status_list)
             start += size
 
     async def run(self):
@@ -97,6 +97,5 @@ class CodeforcesSpider(Spider):
         else:
             general = await self.get_solved()
             if general and 'rating' in general:
-                self.account.set_general(general['rating'], general['maxRating'])
-                self.account.save()
+                await self.account.set_general(general['rating'], general['maxRating'])
             await gen.multi([self.get_submits(), self.fetch_code()])

@@ -1,15 +1,16 @@
-import re
 import json
+import re
 import traceback
-from zipfile import ZipFile
 from datetime import datetime
 from urllib import parse
+from zipfile import ZipFile
 
 from tornado import gen
+
 from app.helpers.exceptions import LoginException
 from app.helpers.logger import logger
+from app.models import submit
 from app.spiders import Spider, HttpMethod, DataType
-from models import submit
 
 
 class VjudgeSpider(Spider):
@@ -70,7 +71,7 @@ class VjudgeSpider(Spider):
                         'type': DataType.Code, 'account': self.account,
                         'run_id': run_id, 'code': code
                     }
-                    self.put_queue([status])
+                    await self.put_queue([status])
         except Exception as e:
             logger.error(e)
             logger.error(traceback.format_exc())
@@ -132,7 +133,6 @@ class VjudgeSpider(Spider):
             await self.get_submits()
             general = self.get_solved()
             if general and 'solved' in general:
-                self.account.set_general(general['solved'], general['submitted'])
-                self.account.save()
+                await self.account.set_general(general['solved'], general['submitted'])
         await self.fetch_code()
 

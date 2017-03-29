@@ -7,7 +7,7 @@
 
 ## 主要依赖
 
-* Python 3.5
+* Python 3.6
 * Tornado 4.4
 * BeautifulSoup
 * PyMySQL, SQLAlchemy

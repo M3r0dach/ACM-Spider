@@ -1,4 +1,0 @@
-
-
-def trigger(**kwargs):
-    pass

@@ -27,6 +27,7 @@ DB_URI = 'mysql+pymysql://{username}:{pwd}@{host}/{db_name}?charset=utf8'.format
 DB_SHOW_SQL = False
 
 # concurrency
+THREAD_POOL_SIZE = 2
 SPIDER_CACHE_SIZE = 5
 ACCOUNT_QUEUE_SIZE = 5
 SPIDER_RUNNER_SIZE = 3

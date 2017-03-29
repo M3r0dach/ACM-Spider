@@ -1,4 +1,6 @@
+import json
 import redis as py_redis
+
 from app.helpers.logger import logger
 from config.secret import redis_config, RedisKey
 from config.settings import SUPPORT_OJ
@@ -46,3 +48,12 @@ def turn_off_spider(oj_name):
     if redis.exists(RedisKey.switch):
         redis.hset(RedisKey.switch, oj_name, 0)
     log_spider_status()
+
+
+###################################
+# redis 成就队列
+###################################
+
+def push_submit_to_queue(submit_id):
+    logger.info('[redis] push submit #{} to queue'.format(submit_id))
+    redis.lpush(RedisKey.achieve_mq, json.dumps({'type': 'submit', 'id': submit_id}))

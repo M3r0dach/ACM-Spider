@@ -6,8 +6,8 @@ from tornado import gen
 from app.helpers.decorators import try_run
 from app.helpers.exceptions import LoginException
 from app.helpers.logger import logger
+from app.models import submit
 from app.spiders import Spider, HttpMethod, DataType
-from models import submit
 
 
 class PojSpider(Spider):
@@ -153,7 +153,7 @@ class PojSpider(Spider):
             status_list = await self.fetch_status(first)
             if not status_list or len(status_list) == 0:
                 return
-            self.put_queue(status_list)
+            await self.put_queue(status_list)
             first = int(status_list[-1]['run_id'])
 
     async def run(self):
@@ -166,6 +166,5 @@ class PojSpider(Spider):
         else:
             general = await self.get_solved()
             if general and 'solved' in general:
-                self.account.set_general(general['solved'], general['submitted'])
-                self.account.save()
+                await self.account.set_general(general['solved'], general['submitted'])
             await gen.multi([self.get_submits(), self.fetch_code()])
