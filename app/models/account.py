@@ -1,6 +1,6 @@
 import base64
 from datetime import datetime, timedelta
-from sqlalchemy import Column, Integer, String, DateTime
+from sqlalchemy import Column, Integer, String, DateTime, func
 from tornado import gen
 
 from app.helpers.logger import logger
@@ -10,35 +10,6 @@ from app.models import BaseModel, session
 from app.models.submit import Submit
 from app.models.user import User
 from config import settings
-from app.models.user_info import UserInfo
-
-
-def update_train_rank(user_id):
-    logger.info('[Account] update_train_rank <User #{}>'.format(user_id))
-    user_info = session.query(UserInfo).filter_by(user_id=user_id).first()
-    if user_info is None:
-        logger.warn("[Account] update_train_rank => UserInfo of User #{} does't exists".format(user_id))
-        return
-    accounts = session.query(Account).filter_by(user_id=user_id)
-    ranks = []
-    for account in accounts:
-        solved, submitted = account.solved, account.submitted
-        oj_name = account.oj_name
-        top_account = session.query(Account).filter_by(oj_name=oj_name)\
-            .order_by(Account.solved.desc(), Account.submitted.desc())\
-            .first()
-        max_solved = max(top_account.solved, solved)
-        if max_solved == 0:
-            this_rank = 1000
-        else:
-            this_rank = (solved / max_solved) * 1000
-        ranks.append(this_rank)
-        logger.debug("[Account] update_train_rank <User #{}> {} => {}".format(user_id, oj_name, this_rank))
-    end_rank = sum(ranks) / len(ranks)
-    user_info.train_rank = end_rank
-    user_info.save()
-    logger.info("[Account] update_train_rank success <User #{}> => {}".format(user_id, end_rank))
-
 
 
 class AccountStatus:
@@ -139,3 +110,52 @@ def get_available_account():
     cur_account.set_status(AccountStatus.QUEUE)
     cur_account.save()
     return cur_account
+
+
+def update_train_rank(user_id):
+    user = session.query(User).filter_by(id=user_id).first()
+    logger.info('[Account] update_train_rank #{}'.format(user))
+    if user is None:
+        logger.warn("[Account] update_train_rank => UserInfo of #{} does't exists".format(user))
+        return
+
+    ranks = []
+    # normal_oj => sum(solved) / sum(top_solved)
+    normal_oj = ['bnu', 'hdu', 'poj', 'vj']
+    accounts = session.query(Account).filter_by(user_id=user_id)\
+        .filter(Account.oj_name.in_(normal_oj))
+    solved_sum = sum([account.solved for account in accounts])
+    top_account = session.query(func.sum(Account.solved), Account.user_id)\
+        .filter(Account.oj_name.in_(normal_oj))\
+        .group_by(Account.user_id)\
+        .order_by(func.sum(Account.solved).desc())\
+        .first()
+    if top_account:
+        top_solved_sum = int(top_account[0])
+        this_rank = (solved_sum / top_solved_sum) * 1000 if top_solved_sum > 0 else 1000
+        ranks.append(this_rank)
+    else:
+        ranks.append(1000)
+
+    # rating_oj => sum(rating / top_rating for every account)
+    rating_oj = ['cf', 'bc']
+    accounts = session.query(Account).filter_by(user_id=user_id) \
+        .filter(Account.oj_name.in_(rating_oj))
+    for account in accounts:
+        rating = account.solved
+        oj_name = account.oj_name
+        top_account = session.query(Account).filter_by(oj_name=oj_name)\
+            .order_by(Account.solved.desc(), Account.submitted.desc())\
+            .first()
+        if not top_account:
+            this_rank = 1000
+        else:
+            top_rating = max(top_account.solved, rating)
+            this_rank = (rating / top_rating) * 1000
+        ranks.append(this_rank)
+
+    # end_rank = sum(ranks)
+    print(ranks)
+    user.train_rank = sum(ranks)
+    user.save()
+    logger.info("[Account] update_train_rank success #{} => sum({}) => {}".format(user, ranks, sum(ranks)))

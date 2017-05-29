@@ -16,7 +16,7 @@ class UserInfo(BaseModel):
     major = Column(String(255))
     grade = Column(String(255))
     situation = Column(String(255))
-    train_rank = Column(Integer)
+
 
     user_id = Column(Integer)
     created_at = Column(DateTime, nullable=False)
