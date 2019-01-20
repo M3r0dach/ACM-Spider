@@ -90,7 +90,9 @@ class VjudgeSpider(Spider):
 
     async def get_submits(self):
         page_size, max_id = 500, 2 ** 31 - 1
-        while True:
+        count = 10
+        while count > 0:
+            count -= 1
             url = self.status_url.format(self.account.nickname, page_size, max_id)
             response = await self.fetch(url, method=HttpMethod.GET,
                                         headers=dict(Cookie=self.cookie),

@@ -82,7 +82,9 @@ class CodeforcesSpider(Spider):
 
     async def get_submits(self):
         start, size = 1, 50
-        while True:
+        count = 10
+        while count>0:
+            count -= 1
             status_list = await self.get_status(self.account.nickname, start, size)
             if not status_list or len(status_list) == 0:
                 break
