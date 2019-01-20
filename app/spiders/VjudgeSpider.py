@@ -15,7 +15,7 @@ from app.spiders import Spider, HttpMethod, DataType
 
 class VjudgeSpider(Spider):
     TAG = '[Virtual Judge]'
-    domain = 'https://vjudge.net'
+    domain = 'https://cn.vjudge.net'
     login_url = domain + '/user/login'
     status_url = domain + '/user/submissions?username={}&pageSize={}&maxId={}'
     code_url_prefix = domain + '/problem/source/{0}'
@@ -90,9 +90,7 @@ class VjudgeSpider(Spider):
 
     async def get_submits(self):
         page_size, max_id = 500, 2 ** 31 - 1
-        count = 10
-        while count > 0:
-            count -= 1
+        while True:
             url = self.status_url.format(self.account.nickname, page_size, max_id)
             response = await self.fetch(url, method=HttpMethod.GET,
                                         headers=dict(Cookie=self.cookie),

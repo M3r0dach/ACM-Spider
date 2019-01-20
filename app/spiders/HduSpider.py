@@ -149,9 +149,7 @@ class HduSpider(Spider):
 
     async def get_submits(self):
         first = ''
-        count = 10
-        while count>0:
-            count -= 1
+        while True:
             status_list = await self.fetch_status(first)
             if not status_list or len(status_list) == 0:
                 break
