@@ -1,13 +1,13 @@
 
 db_config = {
-    'username': '',
+    'username': 'root',
     'pwd': '',
-    'host': 'localhost',
-    'db_name_prefix': 'cuit_acm_{}'
+    'host': 'db',
+    'db_name_prefix': 'acm_meter_{}'
 }
 
 redis_config = {
-    'host': 'localhost',
+    'host': 'redis',
     'port': 6379,
     'db': 0
 }
@@ -20,3 +20,4 @@ class RedisKey:
     poj = prefix + 'poj'
     bnu = prefix + 'bnu'
     codeforces = prefix + 'cf'
+    achieve_mq = prefix + 'achieve_mq'

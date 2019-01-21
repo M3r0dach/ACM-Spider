@@ -48,6 +48,8 @@ def get_error_submits(account):
     return session.query(Submit.run_id, Submit.pro_id) \
         .filter_by(user_id=account.user_id, oj_name=account.oj_name,
                    status=SubmitStatus.BROKEN) \
+        .order_by(Submit.run_id.desc())\
+        .limit(5)\
         .all()
 
 
