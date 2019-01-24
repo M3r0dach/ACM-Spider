@@ -153,6 +153,7 @@ class PojSpider(Spider):
             status_list = await self.fetch_status(first)
             if not status_list or len(status_list) == 0:
                 return
+            logger.debug('{} {} Success to get {} new status'.format(self.TAG, self.account, len(status_list)))
             await self.put_queue(status_list)
             first = int(status_list[-1]['run_id'])
 

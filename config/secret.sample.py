@@ -14,7 +14,7 @@ redis_config = {
 
 
 class RedisKey:
-    prefix = 'cuit_acm.spider.'
+    prefix = 'cuit_acm.'
     switch = prefix + 'switch'
     hdu = prefix + 'hdu'
     poj = prefix + 'poj'

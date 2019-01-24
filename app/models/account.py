@@ -58,8 +58,7 @@ class Account(BaseModel):
 
     @property
     def should_throttle(self):
-        deadline = datetime.now() - timedelta(minutes=settings.FETCH_TIMEDELTA)
-        return self.updated_at >= deadline and self.status != AccountStatus.NOT_INIT
+        return False
 
     def set_status(self, new_status):
         self.status = new_status
