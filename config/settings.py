@@ -36,4 +36,4 @@ SPIDER_RUNNER_SIZE = 3
 DATA_POOL_SIZE = 128
 
 # minutes between account to update again
-FETCH_TIMEDELTA = 0 if app_env == 'development' else 60
+FETCH_TIMEDELTA = 10 if app_env == 'development' else 60

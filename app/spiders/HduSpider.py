@@ -100,7 +100,7 @@ class HduSpider(Spider):
             logger.error('{} {} get Solved/Submitted error: {}'.format(self.TAG, self.account, ex))
             raise ex
 
-    @try_run(3, duration=60)
+    @try_run(3)
     async def get_code(self, run_id, **kwargs):
         url = self.source_code_prefix.format(run_id)
         try:

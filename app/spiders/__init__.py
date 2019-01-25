@@ -80,6 +80,7 @@ class Spider:
         for item in item_list:
             if 'account' in item:
                 await DataPool.put(item)
+        logger.info('Success to put {} item into queue'.format(len(item_list)))
 
 
     ########################
@@ -96,14 +97,19 @@ class Spider:
 
     async def fetch_code(self):
         error_submits = submit.get_error_submits(self.account)
+        logger.info('{} has {} error submits'.format(self.account, len(error_submits)))
         for run_id, pro_id in error_submits:
+            logger.info('start to get code {}:{}'.format(self.account, run_id))
             code = await self.get_code(run_id, pro_id=pro_id)
             if not code:
+                logger.info('code error {}:{}, waited 120s'.format(self.account, run_id))
                 await gen.sleep(60 * 2)
             else:
                 status = {
                     'type': DataType.Code, 'account': self.account,
                     'run_id': run_id, 'code': code
                 }
+                logger.info('{}:{} put queue'.format(self.account, run_id))
                 await self.put_queue([status])
                 await gen.sleep(30)
+                logger.info('finished getting code {}:{}'.format(self.account, run_id))

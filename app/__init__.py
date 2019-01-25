@@ -38,6 +38,7 @@ async def account_producer():
     """ 待爬取账号生产者 """
     logger.info('[AccountProducer] 开始获取可用账号放入队列 ...')
     while True:
+        logger.info('[AccountProducer] next turn')
         cur = account.get_available_account()
         if cur and is_spider_open(cur.oj_name):
             await AccountQueue.put(cur)
@@ -50,11 +51,14 @@ async def spider_runner(idx):
     """ 爬虫运行地 """
     logger.info('[SpiderRunner #{0}] 开始运行 ...'.format(idx))
     while True:
+        logger.info('[SpiderRunner] next turn')
         cur_account = await AccountQueue.get()
         logger.info('[SpiderRunner #{0}] {1} <=== account_queue(size={2})'
                     .format(idx, cur_account, AccountQueue.qsize()))
         # let spider.run()
         worker = await SpiderFactory[cur_account.oj_name].get()
+        logger.info('[SpiderRunner #{0}] {1} get worker'
+                    .format(idx, cur_account))
         worker.account = cur_account
 
         try:
@@ -83,9 +87,11 @@ async def data_pool_consumer():
     """ 爬取的数据消费协程 """
     logger.info('[DataPoolConsumer] 数据消费协程开启 ... ')
     while True:
+        logger.info('[DataPoolConsumer] next turn')
         while DataPool.empty():
             await gen.sleep(10)
         new_data = await DataPool.get()
+        logger.info('[DataPoolConsumer] get new submit {}:{}'.format(new_data['account'],new_data['run_id']))              
         # new submit
         if new_data['type'] == DataType.Submit:
             if submit.create_submit(new_data):
@@ -99,7 +105,9 @@ async def data_pool_consumer():
                     new_data['account'].oj_name, new_data['run_id'], new_data['account'].nickname
                 ))
             else:
-                await DataPool.put(new_data)
+                logger.info('[DataPoolConsumer] 更新代码失败:提交不存在 for <{} {} {}>'.format(
+                    new_data['account'].oj_name, new_data['run_id'], new_data['account'].nickname
+                ))
         DataPool.task_done()
 
 

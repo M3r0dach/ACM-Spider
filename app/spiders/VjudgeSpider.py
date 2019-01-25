@@ -65,13 +65,15 @@ class VjudgeSpider(Spider):
             with ZipFile(buffer) as code_zip:
                 for name in code_zip.namelist():
                     run_id = re.split(r'/|_', name)[2]
+                    logger.info('vj get code_zip run_id {}'.format(run_id))
                     with code_zip.open(name) as code_fp:
                         code = code_fp.read()
-                    status = {
-                        'type': DataType.Code, 'account': self.account,
-                        'run_id': run_id, 'code': code
-                    }
-                    await self.put_queue([status])
+                        status = {
+                            'type': DataType.Code, 'account': self.account,
+                            'run_id': run_id, 'code': code
+                        }
+                        await self.put_queue([status])
+                    await gen.sleep(5)
         except Exception as e:
             logger.error(e)
             logger.error(traceback.format_exc())
