@@ -104,6 +104,7 @@ class Spider:
             if not code:
                 logger.info('code error {}:{}, waited 120s'.format(self.account, run_id))
                 await gen.sleep(60 * 2)
+                break
             else:
                 status = {
                     'type': DataType.Code, 'account': self.account,

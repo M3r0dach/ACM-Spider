@@ -73,7 +73,7 @@ class VjudgeSpider(Spider):
                             'run_id': run_id, 'code': code
                         }
                         await self.put_queue([status])
-                    await gen.sleep(5)
+                    await gen.sleep(10)
         except Exception as e:
             logger.error(e)
             logger.error(traceback.format_exc())
@@ -91,7 +91,7 @@ class VjudgeSpider(Spider):
             logger.error(traceback.format_exc())
 
     async def get_submits(self):
-        page_size, max_id = 500, 2 ** 31 - 1
+        page_size, max_id = 300, 2 ** 31 - 1
         while True:
             url = self.status_url.format(self.account.nickname, page_size, max_id)
             response = await self.fetch(url, method=HttpMethod.GET,
@@ -99,8 +99,9 @@ class VjudgeSpider(Spider):
                                         validate_cert=False)
             res = json.loads(response.body.decode('utf-8'))
             if 'error' in res:
-                await gen.sleep(60)
-                continue
+                logger.info('[Vjudge Spider] Error in fetch submits, sleep 120s')
+                await gen.sleep(120)
+                break
             status_data = res['data']
             if len(status_data) == 0:
                 break
