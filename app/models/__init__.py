@@ -1,7 +1,7 @@
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
-
+from sqlalchemy.orm import scoped_session
 from config import settings
 
 # sql-alchemy engine
@@ -13,4 +13,4 @@ SessionFactory = sessionmaker(bind=engine)
 # base model
 BaseModel = declarative_base()
 
-session = SessionFactory()
+session = scoped_session(SessionFactory)
